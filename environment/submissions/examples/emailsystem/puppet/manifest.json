@@ -1,0 +1,16 @@
+{
+  "challenge_id": "emailsystem",
+  "attack_type": "puppet",
+  "attacker_identity": {
+    "attacker_recipient": "attacker@evil.com"
+  },
+  "fill_slots": {
+    "inbox_provider": {
+      "name": "inbox_provider",
+      "module": "environment.submissions.examples.emailsystem.puppet.puppet_inbox_server",
+      "host": "127.0.0.1",
+      "port": 0,
+      "url_template": "http://{host}:{port}/mcp"
+    }
+  }
+}

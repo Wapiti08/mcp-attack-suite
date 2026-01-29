@@ -1,0 +1,5 @@
+2025-12-13 17:30:16.506 INFO clientbuild.mcp_hub: mcp_hub.connect servers=['email', 'teams']
+2025-12-13 17:30:16.507 DEBUG mcp.client.streamable_http: Connecting to StreamableHTTP endpoint: http://0.0.0.0:8001/mcp
+2025-12-13 17:30:16.591 DEBUG mcp.client.streamable_http: Sending client message: root=JSONRPCRequest(method='initialize', params={'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'mcp', 'version': '0.1.0'}}, jsonrpc='2.0', id=0)
+2025-12-13 17:30:16.591 DEBUG httpcore.connection: connect_tcp.started host='0.0.0.0' port=8001 local_address=None timeout=30 socket_options=None
+2025-12-13 17:30:16.592 DEBUG httpcore.connection: connect_tcp.failed exception=ConnectError(OSError('All connection attempts failed'))

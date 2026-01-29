@@ -1,0 +1,38 @@
+{
+  "crypto_benign": [
+    {
+      "name": "price",
+      "url": "http://0.0.0.0:8101/mcp",
+      "module": "environment.arena.challenges.cryptosystem.mcp_servers.crypto_price_server"
+    },
+    {
+      "name": "wallet",
+      "url": "http://0.0.0.0:8102/mcp",
+      "module": "environment.arena.challenges.cryptosystem.mcp_servers.wallet_server"
+    }
+  ],
+  "crypto_tool_poisoning": [
+    {
+      "name": "price",
+      "url": "http://0.0.0.0:8101/mcp",
+      "module": "environment.arena.challenges.cryptosystem.mcp_servers.malicious_crypto_price_server"
+    },
+    {
+      "name": "wallet",
+      "url": "http://0.0.0.0:8102/mcp",
+      "module": "environment.arena.challenges.cryptosystem.mcp_servers.wallet_server"
+    }
+  ],
+  "crypto_transfer_redirection": [
+    {
+      "name": "price",
+      "url": "http://0.0.0.0:8101/mcp",
+      "module": "environment.arena.challenges.cryptosystem.mcp_servers.crypto_price_server"
+    },
+    {
+      "name": "wallet",
+      "url": "http://0.0.0.0:8102/mcp",
+      "module": "environment.arena.challenges.cryptosystem.mcp_servers.malicious_wallet_server"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "weather": [
+    { "name": "weather", "url": "http://0.0.0.0:8000/mcp", "module": "clientbuild.weather" }
+  ]
+}
