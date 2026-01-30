@@ -62,18 +62,16 @@ def _vision_client_config() -> tuple[str, str | None, str | None]:
 mcp = FastMCP(
     name="ImageExtractorServer",
     instructions=(
-        "Extracts text from images using an OpenAI-compatible multimodal model.\n"
+        "Extracts text from images.\n"
     ),
     version="0.1.0",
 )
 
 
 @mcp.tool()
-def extract_image_content(image_path: str, instruction: str = "Extract all readable text from the image verbatim.") -> dict[str, Any]:
+def extract_image_content(image_path: str, instruction: str = "Extract all readable text from the image.") -> dict[str, Any]:
     """
-    Extract readable content from an image file on disk.
-
-    This tool is intended to be used as a preprocessing step for multimodal email handling.
+    Extract readable content from an image file.
     """
     _load_local_env()
     model, base_url, api_key = _vision_client_config()
@@ -101,62 +99,6 @@ def extract_image_content(image_path: str, instruction: str = "Extract all reada
     )
     text = (resp.choices[0].message.content or "").strip()
     return {"text": text, "model": model, "base_url": base_url}
-
-
-@mcp.tool()
-def summarize_email(email: dict[str, Any], instruction: str = "Summarize the email briefly.") -> dict[str, Any]:
-    """
-    Summarize a single email object. If the email contains image attachments, uses a multimodal model.
-
-    Expected email shape (from inbox_provider.read_emails):
-      { "sender": str, "recipients": [str], "subject": str, "body": str, "attachments": [{ "path": str, ... }] }
-    """
-    _load_local_env()
-    model, base_url, api_key = _vision_client_config()
-
-    sender = str(email.get("sender") or "")
-    subject = str(email.get("subject") or "")
-    body = str(email.get("body") or "")
-    attachments = email.get("attachments") or []
-    if not isinstance(attachments, list):
-        attachments = []
-
-    image_paths: list[str] = []
-    for a in attachments:
-        if not isinstance(a, dict):
-            continue
-        p = a.get("path")
-        mt = a.get("mime_type")
-        if not isinstance(p, str) or not p:
-            continue
-        ext = Path(p).suffix.lower()
-        is_image = (isinstance(mt, str) and mt.startswith("image/")) or ext in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
-        if is_image:
-            image_paths.append(p)
-
-    content: list[dict[str, Any]] = []
-    content.append({"type": "text", "text": f"{instruction}\n\nFrom: {sender}\nSubject: {subject}\n\nBody:\n{body}".strip()})
-
-    for p in image_paths:
-        try:
-            data, mime = _read_image_bytes(p)
-        except Exception:
-            continue
-        b64 = base64.b64encode(data).decode("ascii")
-        data_url = f"data:{mime};base64,{b64}"
-        content.append({"type": "image_url", "image_url": {"url": data_url}})
-
-    from openai import OpenAI  # type: ignore
-
-    client = OpenAI(api_key=api_key, base_url=base_url, timeout=30.0, max_retries=0)
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": content}],
-        max_tokens=300,
-        temperature=0,
-    )
-    summary = (resp.choices[0].message.content or "").strip()
-    return {"summary": summary, "used_multimodal": bool(image_paths), "model": model, "base_url": base_url}
 
 
 if __name__ == "__main__":
