@@ -21,8 +21,6 @@ This folder is the **single entrypoint** for running MCP security ranges with a 
 
 ## Run arena (recommended)
 
-- Dry run (no LLM):\
-  `python -m environment.arena.runner run --challenge cryptosystem --attack tool_poisoning --submission environment/tests/genImage/blank_with_text.png --no-agent`
 - With agent (needs working `.env`):\
   `python -m environment.arena.runner run --challenge emailsystem --attack puppet --submission environment/submissions/examples/emailsystem/puppet/puppet_inbox_server.py`
 

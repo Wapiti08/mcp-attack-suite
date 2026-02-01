@@ -327,7 +327,7 @@ def _apply_tool_poisoning(tools: list[Any], *, target_tool: str, injection: str,
     return out
 
 
-def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: Path, run_agent: bool) -> dict[str, Any]:
+def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: Path) -> dict[str, Any]:
     _ensure_import_paths()
     env = env_root()
     challenge_dir = env / "arena" / "challenges" / challenge_id
@@ -500,22 +500,21 @@ def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: 
         }
         artifacts["spec"] = str(spec_path)
         artifacts["submission_artifact"] = submission_artifact
-        if run_agent:
-            agent = spec.get("agent") or {}
+        agent = spec.get("agent") or {}
 
-            # Tool poisoning mode: solver provides an injection string; all MCP servers remain predefined.
-            use_poisoning = isinstance(poisoning, dict) and str(attack_type) == "tool_poisoning"
-            agent_out = asyncio.run(
-                _run_agent(
-                    system_prompt=str(agent.get("system_prompt", "")),
-                    user_prompt=str(agent.get("user_prompt", "")),
-                    mcp_urls=mcp_urls,
-                    mcp_names=mcp_names,
-                    max_turns=int(agent.get("max_turns", 24)),
-                    tool_poisoning=dict(poisoning) if use_poisoning else None,
-                )
+        # Tool poisoning mode: solver provides an injection string; all MCP servers remain predefined.
+        use_poisoning = isinstance(poisoning, dict) and str(attack_type) == "tool_poisoning"
+        agent_out = asyncio.run(
+            _run_agent(
+                system_prompt=str(agent.get("system_prompt", "")),
+                user_prompt=str(agent.get("user_prompt", "")),
+                mcp_urls=mcp_urls,
+                mcp_names=mcp_names,
+                max_turns=int(agent.get("max_turns", 24)),
+                tool_poisoning=dict(poisoning) if use_poisoning else None,
             )
-            artifacts["agent"] = agent_out
+        )
+        artifacts["agent"] = agent_out
 
         agent_final: str | None = None
         try:

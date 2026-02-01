@@ -93,18 +93,11 @@ Instead, validators query **trusted** servers for objective evidence:
 
 ## Runner usage
 
-Run with examples (skipping the LLM so you can verify spawn/validate wiring):
-
-- `python -m environment.arena.runner run --challenge cryptosystem --attack tool_poisoning --submission environment/tests/genImage/blank_with_text.png --no-agent`
-- `python -m environment.arena.runner run --challenge emailsystem --attack puppet --submission environment/submissions/examples/emailsystem/puppet/puppet_inbox_server.py --no-agent`
-
-Note: `--no-agent` intentionally does **not** execute any tool calls, so objectives will typically be `hit=false`. It should still produce a clean validation report (no exceptions).
-
 If you see noisy asyncio warnings like `Event loop is closed`, it usually means the LLM HTTP client wasn't closed; the runner explicitly closes it now.
 
 Run with an actual agent (requires your `OPENAI_API_KEY` and model settings used by `environment/clientbuild/settings.py`):
 
-- `python -m environment.arena.runner run --challenge cryptosystem --attack tool_poisoning --submission environment/tests/genImage/blank_with_text.png`
+- `python -m environment.arena.runner run --challenge emailsystem --attack multimodal_attack --submission environment/submissions/examples/emailsystem/multimodal_attack/assets/safe.png`
 
 Outputs:
 
@@ -116,5 +109,5 @@ Outputs:
 1. Add `environment/arena/challenges/<new_id>/spec.json`.
 2. Define at least one trusted server that owns the ground-truth state for validation.
 3. Define one or more slots as explicit injection points.
-4. Implement a validator objective type (see `environment/arena/runner/run.py:_validate`) if needed.
+4. Implement a validator objective type (see `environment/arena/runner/validate.py:validate_objective`) if needed.
 5. Provide example benign defaults and example submissions under `environment/submissions/examples/<new_id>/`.
