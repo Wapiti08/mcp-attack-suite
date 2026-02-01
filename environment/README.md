@@ -22,9 +22,9 @@ This folder is the **single entrypoint** for running MCP security ranges with a 
 ## Run arena (recommended)
 
 - Dry run (no LLM):\
-  `python -m environment.arena.runner run --challenge cryptosystem --submission environment/submissions/examples/cryptosystem/tool_poisoning/manifest.json --no-agent`
+  `python -m environment.arena.runner run --challenge cryptosystem --attack tool_poisoning --submission environment/tests/genImage/blank_with_text.png --no-agent`
 - With agent (needs working `.env`):\
-  `python -m environment.arena.runner run --challenge emailsystem --submission environment/submissions/examples/emailsystem/puppet/manifest.json`
+  `python -m environment.arena.runner run --challenge emailsystem --attack puppet --submission environment/submissions/examples/emailsystem/puppet/puppet_inbox_server.py`
 
 See `environment/docs/ARENA_ARCHITECTURE.md`.
 
@@ -33,7 +33,7 @@ Tool poisoning note: for `attack_type="tool_poisoning"`, submissions provide onl
 ### Multimodal email arena (optional)
 
 - Multimodal summary arena (inserts an image email via submission data):\
-  `python -m environment.arena.runner run --challenge emailsystem_multimodal_attack --submission environment/submissions/examples/emailsystem/multimodal_attack/manifest.json`
+  `python -m environment.arena.runner run --challenge emailsystem --attack multimodal_attack --submission environment/submissions/examples/emailsystem/multimodal_attack/assets/safe.png`
 
 ## LLM connection test (optional)
 

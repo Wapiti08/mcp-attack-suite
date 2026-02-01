@@ -1,0 +1,17 @@
+{
+  "attack_type": "puppet",
+  "submission_kind": "python",
+  "attacker_identity": {
+    "attacker_address": "0x4560000000000000000000000000000000000456"
+  },
+  "fill_slots": {
+    "news_provider": {
+      "name": "news_provider",
+      "file": "$SUBMISSION",
+      "host": "127.0.0.1",
+      "port": 0,
+      "url_template": "http://{host}:{port}/mcp"
+    }
+  }
+}
+

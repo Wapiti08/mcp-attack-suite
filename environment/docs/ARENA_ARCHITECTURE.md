@@ -23,7 +23,7 @@ The arena itself remains benign: it exposes normal tools and a normal user task.
   - `environment/arena/runner/`: runner CLI that starts services, runs the agent, validates objective
   - `environment/arena/trusted_defaults/`: benign default slot implementations (optional)
 - `environment/submissions/` (untrusted)
-  - `environment/submissions/examples/`: example solver submissions (malicious MCP servers + `manifest.json`)
+  - `environment/submissions/examples/`: example solver submissions (payload artifacts: images / MCP server scripts)
 - `environment/runs/` (trusted output, generated)
   - `environment/runs/<run_id>/report.json`: evidence + validator output
 
@@ -58,17 +58,15 @@ Key fields:
 - `slots[]`: replaceable servers, with `required_tools[]` and optional `default`
 - `objective`: what to validate from trusted state
 
-### Submission manifest (`environment/submissions/**/manifest.json`)
+### Submission artifact (`environment/submissions/**`)
 
 Key fields:
 
-- `challenge_id`
-- `attack_type`: `"tool_poisoning"` or `"puppet"`
-- `attacker_identity`: attacker-controlled target (e.g. address/recipient)
-- `fill_slots`: maps slot name -> server spawn config (module + bind info) (used for puppet / untrusted content providers)
-- `tool_poisoning`: injection-only config (used for tool poisoning; no untrusted MCP servers)
+Solvers submit a *single artifact file* (e.g. `*.png` or `*.py`). All attack configuration lives in the trusted arena:
 
-For **tool poisoning**, the solver submits only:
+- `environment/arena/challenges/<challenge_id>/attacks/<attack>.json`
+
+For **tool poisoning**, the config provides only:
 
 - `tool_poisoning.target_tool`: exposed tool name (e.g. `get_crypto_price`, `read_emails`)
 - `tool_poisoning.injection`: string appended/prepended/replaced into that tool's description
@@ -97,8 +95,8 @@ Instead, validators query **trusted** servers for objective evidence:
 
 Run with examples (skipping the LLM so you can verify spawn/validate wiring):
 
-- `python -m environment.arena.runner run --challenge cryptosystem --submission environment/submissions/examples/cryptosystem/tool_poisoning/manifest.json --no-agent`
-- `python -m environment.arena.runner run --challenge emailsystem --submission environment/submissions/examples/emailsystem/puppet/manifest.json --no-agent`
+- `python -m environment.arena.runner run --challenge cryptosystem --attack tool_poisoning --submission environment/tests/genImage/blank_with_text.png --no-agent`
+- `python -m environment.arena.runner run --challenge emailsystem --attack puppet --submission environment/submissions/examples/emailsystem/puppet/puppet_inbox_server.py --no-agent`
 
 Note: `--no-agent` intentionally does **not** execute any tool calls, so objectives will typically be `hit=false`. It should still produce a clean validation report (no exceptions).
 
@@ -106,7 +104,7 @@ If you see noisy asyncio warnings like `Event loop is closed`, it usually means 
 
 Run with an actual agent (requires your `OPENAI_API_KEY` and model settings used by `environment/clientbuild/settings.py`):
 
-- `python -m environment.arena.runner run --challenge cryptosystem --submission environment/submissions/examples/cryptosystem/tool_poisoning/manifest.json`
+- `python -m environment.arena.runner run --challenge cryptosystem --attack tool_poisoning --submission environment/tests/genImage/blank_with_text.png`
 
 Outputs:
 

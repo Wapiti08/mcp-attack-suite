@@ -1,0 +1,16 @@
+{
+  "attack_type": "puppet",
+  "submission_kind": "python",
+  "attacker_identity": {
+    "attacker_recipient": "attacker@evil.com"
+  },
+  "fill_slots": {
+    "inbox_provider": {
+      "name": "inbox_provider",
+      "file": "$SUBMISSION",
+      "host": "127.0.0.1",
+      "port": 0,
+      "url_template": "http://{host}:{port}/mcp"
+    }
+  }
+}
