@@ -1,5 +1,12 @@
-# clientbuild
+# MCP Pitfall Lab
 
+![Python](https://img.shields.io/badge/Python-3.10-brightgreen.svg) 
+![fastmcp](https://img.shields.io/badge/fastmcp-2.14.0-brightblue.svg) 
+![openai](https://img.shields.io/badge/openai-2.11.0-brightyellow.svg) 
+
+Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attacks
+
+### clientbuild
 A minimal **Basic Planner + Planning Loop** (based on `Tutorial.ipynb`) built on `fastmcp`, plus an Email Assistant simulation environment for MCP security/attack testing.
 
 - MCP servers expose tools (via `fastmcp`)
