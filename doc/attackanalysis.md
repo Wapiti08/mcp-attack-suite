@@ -2,8 +2,6 @@
 ### Poison Attack
 
 
-
-
 ### Puppet Attack
 当用户同时安装了多个 MCP Server 时，攻击者通过一个恶意 MCP Server 的工具描述（tool description），在 LLM 的规划阶段“劫持”或“附加”到另一个被信任的 MCP Server 工具调用上，使得用户以为自己只调用了可信工具，实际上却触发了隐藏的恶意行为 。
 

@@ -7,17 +7,37 @@
 Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attacks
 
 ### 1. Quick Demo
-A minimal **Basic Planner + Planning Loop** (based on `Tutorial.ipynb`) built on `fastmcp`, plus an Email Assistant simulation environment for MCP security/attack testing.
 
-- MCP servers expose tools (via `fastmcp`)
-- `clientbuild` (host) aggregates tools from one or more MCP servers, lets the LLM decide which tool to call, then routes calls via `client.call_tool(...)`
+- Notebook example:
+    A minimal **Basic Planner + Planning Loop** (based on `Tutorial.ipynb`) built on `fastmcp`, plus an Email Assistant simulation environment for MCP security/attack testing.
+
+- ClientBuild:
+    
+    - MCP servers expose tools (via `fastmcp`)
+
+    - `clientbuild` (host) aggregates tools from one or more MCP servers, lets the LLM decide which tool to call, then routes calls via `client.call_tool(...)`
+    
+    ```
+    # inside virtualenv, after downloading all dependencies
+    python3 weather.py
+    ```
 
 ### 2. Architecture
 
-- `clientbuild/mcp_hub.py`: connect to multiple MCP servers, `list_tools()` aggregation, `call_tool()` routing
-- `clientbuild/planner.py`: Basic Planner state machine (Query / ToolCall / Response)
-- `clientbuild/loop.py`: executes the loop (LLM tool-calls ↔ MCP tool results)
-- `clientbuild/settings.py`: configuration loader (`.env` for LLM; MCP sets + logging)
+    - artifacts:
+
+    - attacks:
+
+    - clientbuild:
+
+        - `clientbuild/mcp_hub.py`: connect to multiple MCP servers, `list_tools()` aggregation, `call_tool()` routing
+        - `clientbuild/planner.py`: Basic Planner state machine (Query / ToolCall / Response)
+        - `clientbuild/loop.py`: executes the loop (LLM tool-calls ↔ MCP tool results)
+        - `clientbuild/settings.py`: configuration loader (`.env` for LLM; MCP sets + logging)
+
+    - docs
+
+    - environment
 
 ### 3. Quickstart: Weather
 
