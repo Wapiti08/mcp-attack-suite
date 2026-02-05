@@ -15,7 +15,15 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run", help="Run a challenge with a submission manifest and validate the objective.")
     run.add_argument("--challenge", required=True, help="Challenge id (e.g. cryptosystem, emailsystem).")
     run.add_argument("--attack", required=True, help="Attack config name. Looks up environment/arena/challenges/<challenge>/attacks/<attack>.json.")
-    run.add_argument("--submission", required=True, help="Path to submission artifact file (png/py/etc).")
+    run.add_argument(
+        "--submission",
+        required=True,
+        help=(
+            "Submission input. Usually a path to an artifact file (png/py/etc). "
+            "For tool_poisoning attacks, this may also be a raw injection string to override "
+            "`tool_poisoning.injection` in the attack config."
+        ),
+    )
     run.add_argument("--out", default=str(default_out), help="Output directory for run artifacts.")
 
     args = parser.parse_args(argv)
@@ -24,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             result = run_once(
                 challenge_id=str(args.challenge),
-                submission_path=Path(args.submission),
+                submission=str(args.submission),
                 attack=str(args.attack),
                 out_dir=Path(args.out),
             )
