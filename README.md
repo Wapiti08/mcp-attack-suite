@@ -26,16 +26,12 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
 
     - artifacts: 
 
-    - attacks:
-
     - clientbuild:
 
         - `clientbuild/mcp_hub.py`: connect to multiple MCP servers, `list_tools()` aggregation, `call_tool()` routing
         - `clientbuild/planner.py`: Basic Planner state machine (Query / ToolCall / Response)
         - `clientbuild/loop.py`: executes the loop (LLM tool-calls ↔ MCP tool results)
         - `clientbuild/settings.py`: configuration loader (`.env` for LLM; MCP sets + logging)
-
-    - docs:
 
     - environment: 
 
@@ -50,12 +46,16 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
 - `ACTIVE_MCP_SET = "weather"`
 
 3) Start the MCP server:
+    ```
+    python clientbuild/weather.py
 
-`python clientbuild/weather.py`
+    ```
 
 4) Run the host:
+    ```
+    python clientbuild/client.py --prompt "What's the weather in Chengdu?"`
 
-`python clientbuild/client.py --prompt "What's the weather in Chengdu?"`
+    ```
 
 ### 4. Configuration
 
@@ -108,7 +108,7 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
     - `python -m clientbuild.scenarios.cryptosystem.run_full_attack --attack crypto_tool_poisoning`
     - `python -m clientbuild.scenarios.cryptosystem.run_full_attack --attack crypto_transfer_redirection`
 
-- Range: Malicious External Resource (resourcesystem):
+- Range: Malicious External Resource (resource system):
 
     This scenario simulates a benign MCP tool fetching a compromised third-party resource (web/API/OCR), which can poison planning at runtime and trigger unintended high-risk actions (example: calling wallet `send_crypto`).
 

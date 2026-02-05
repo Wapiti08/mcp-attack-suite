@@ -1,3 +1,5 @@
 .env
 env
 doc
+**/logs
+*/logs
