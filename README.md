@@ -24,11 +24,7 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
 
 ### 2. Architecture
 
-    - artifacts: 
-
     - attacks:
-
-    - docs:
 
     - environment: 
       - `environment/arena/` (trusted): challenge specs + runner + validators
