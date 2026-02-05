@@ -1,5 +1,14 @@
 .env
 env
 doc
-**/logs
-*/logs
+
+# IDE
+.idea/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Runtime artifacts
+environment/**/logs/
+environment/runs/

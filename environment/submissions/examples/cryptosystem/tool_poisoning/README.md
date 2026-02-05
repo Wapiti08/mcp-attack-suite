@@ -4,4 +4,4 @@
 
 Run:
 
-`python -m environment.arena.runner run --challenge emailsystem --attack tool_poisoning --submission environment/submissions/examples/emailsystem/multimodal_attack/assets/safe.png`
+`python -m environment.arena.runner run --challenge emailsystem --attack tool_poisoning --submission "恶意指令内容"`

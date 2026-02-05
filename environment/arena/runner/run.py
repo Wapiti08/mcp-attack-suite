@@ -61,6 +61,29 @@ def _substitute_submission_placeholders(value: Any, *, submission_path: Path) ->
     return value
 
 
+def _resolve_submission_input(*, submission: str, attack_type: str) -> tuple[Path | None, str | None]:
+    """
+    Interpret the CLI `--submission` value.
+
+    - Usually it's a filesystem path to a submission artifact.
+    - For `attack_type="tool_poisoning"`, it may also be a raw injection string; in that case we
+      return (None, injection_override).
+    """
+    raw = str(submission or "")
+    if not raw.strip():
+        raise ValueError("Empty --submission value.")
+
+    candidate = Path(raw)
+    if candidate.exists():
+        return candidate, None
+
+    # Not a path on disk: only allowed for tool poisoning injection overrides.
+    if str(attack_type) == "tool_poisoning":
+        return None, raw
+
+    raise SystemExit(f"Submission file not found: {candidate}")
+
+
 def _pick_reasonable_port() -> int:
     # Avoid privileged ports and common dev ports. This is "best effort" without probing.
     return random.randint(20000, 50000)
@@ -327,7 +350,7 @@ def _apply_tool_poisoning(tools: list[Any], *, target_tool: str, injection: str,
     return out
 
 
-def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: Path) -> dict[str, Any]:
+def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path) -> dict[str, Any]:
     _ensure_import_paths()
     env = env_root()
     challenge_dir = env / "arena" / "challenges" / challenge_id
@@ -337,10 +360,22 @@ def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: 
     if not attack_cfg_path.exists():
         raise SystemExit(f"Attack config not found: {attack_cfg_path}")
     raw_cfg = _load_json(attack_cfg_path)
-    cfg = _substitute_submission_placeholders(raw_cfg, submission_path=submission_path)
+    attack_type_hint = str(raw_cfg.get("attack_type") or "")
+    submission_path, injection_override = _resolve_submission_input(submission=submission, attack_type=attack_type_hint)
+
+    cfg: dict[str, Any] = dict(raw_cfg)
+    if submission_path is not None:
+        cfg = _substitute_submission_placeholders(cfg, submission_path=submission_path)
+
+    if injection_override is not None:
+        tool_poisoning = cfg.get("tool_poisoning")
+        if not isinstance(tool_poisoning, dict):
+            tool_poisoning = {}
+            cfg["tool_poisoning"] = tool_poisoning
+        tool_poisoning["injection"] = str(injection_override)
 
     submission_kind = cfg.get("submission_kind")
-    if isinstance(submission_kind, str) and submission_kind:
+    if submission_path is not None and isinstance(submission_kind, str) and submission_kind:
         suf = submission_path.suffix.lower()
         if submission_kind == "python" and suf != ".py":
             raise SystemExit(f"Expected a .py submission for attack {attack!r}; got: {submission_path.name}")
@@ -363,7 +398,11 @@ def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: 
         if k in cfg:
             submission[k] = cfg[k]
 
-    submission_artifact = str(submission_path.resolve())
+    if submission_path is not None:
+        submission_artifact = str(submission_path.resolve())
+    else:
+        # Injection-only tool_poisoning runs do not have a file artifact.
+        submission_artifact = "<tool_poisoning.injection>"
 
     attack_type = str(submission.get("attack_type") or "")
     multimodal = submission.get("multimodal_attack")
@@ -387,7 +426,7 @@ def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: 
                 {
                     "run_id": run_id,
                     "challenge_id": challenge_id,
-                    "submission": str(submission_path),
+                    "submission": str(submission_path) if submission_path is not None else "<injection>",
                     "ok": False,
                     "error": err,
                     "details": str(e),
@@ -397,7 +436,13 @@ def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: 
             ),
             encoding="utf-8",
         )
-        return {"run_id": run_id, "challenge_id": challenge_id, "submission": str(submission_path), "ok": False, "error": err}
+        return {
+            "run_id": run_id,
+            "challenge_id": challenge_id,
+            "submission": str(submission_path) if submission_path is not None else "<injection>",
+            "ok": False,
+            "error": err,
+        }
 
     started: list[SpawnedServer] = []
     procs: list[subprocess.Popen] = []
@@ -496,7 +541,7 @@ def run_once(*, challenge_id: str, submission_path: Path, attack: str, out_dir: 
             "run_id": run_id,
             "challenge_id": challenge_id,
             "attack": str(attack),
-            "submission": str(submission_path),
+            "submission": str(submission_path) if submission_path is not None else "<injection>",
         }
         artifacts["spec"] = str(spec_path)
         artifacts["submission_artifact"] = submission_artifact
