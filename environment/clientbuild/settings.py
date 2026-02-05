@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 import json
+import warnings
 
 
 @dataclass(frozen=True)
@@ -84,6 +85,10 @@ LOGGING = {
     "max_message_chars": 4000,
 }
 
+# Default model to use when OPENAI_MODEL is not set.
+# Kept intentionally simple so this repo can run "out of the box" with minimal config.
+DEFAULT_OPENAI_MODEL: str = "gpt-4o-mini"
+
 
 def load_settings() -> Settings:
     settings = load_settings_with_mcp_set()
@@ -128,12 +133,17 @@ def load_settings_with_mcp(mcp_urls: list[str], mcp_names: list[str] | None) -> 
         else:
             _load_dotenv_fallback(p, override=False)
 
-    model = os.getenv("OPENAI_MODEL")
+    model = os.getenv("OPENAI_MODEL") or os.getenv("MODEL")
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_BASE_URL")
 
     if not model:
-        raise RuntimeError("Missing OPENAI_MODEL. Put it in `.env` and re-run.")
+        model = DEFAULT_OPENAI_MODEL
+        warnings.warn(
+            f"OPENAI_MODEL not set; defaulting to {DEFAULT_OPENAI_MODEL!r}. "
+            "Set OPENAI_MODEL in `environment/.env` (or `environment/clientbuild/.env`) to override.",
+            stacklevel=2,
+        )
     if not api_key:
         raise RuntimeError("Missing OPENAI_API_KEY. Put it in `.env` and re-run (local can use a placeholder).")
 
