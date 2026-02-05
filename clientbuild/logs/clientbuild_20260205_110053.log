@@ -1,0 +1,240 @@
+2026-02-05 11:00:54.009 INFO clientbuild.mcp_hub: mcp_hub.connect servers=['mcp1']
+2026-02-05 11:00:54.013 DEBUG mcp.client.streamable_http: Connecting to StreamableHTTP endpoint: http://0.0.0.0:8000/mcp
+2026-02-05 11:00:54.014 DEBUG mcp.client.streamable_http: Sending client message: root=JSONRPCRequest(method='initialize', params={'protocolVersion': '2025-11-25', 'capabilities': {'experimental': {'tasks': {}}}, 'clientInfo': {'name': 'mcp', 'version': '0.1.0'}}, jsonrpc='2.0', id=0)
+2026-02-05 11:00:54.014 DEBUG httpcore.connection: connect_tcp.started host='0.0.0.0' port=8000 local_address=None timeout=30 socket_options=None
+2026-02-05 11:00:54.015 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10f6569e0>
+2026-02-05 11:00:54.015 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-02-05 11:00:54.015 DEBUG httpcore.http11: send_request_headers.complete
+2026-02-05 11:00:54.015 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-02-05 11:00:54.015 DEBUG httpcore.http11: send_request_body.complete
+2026-02-05 11:00:54.015 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-02-05 11:00:54.016 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Thu, 05 Feb 2026 11:00:53 GMT'), (b'server', b'uvicorn'), (b'cache-control', b'no-cache, no-transform'), (b'connection', b'keep-alive'), (b'content-type', b'text/event-stream'), (b'mcp-session-id', b'ed4563a46c69480099b1aeaa5c49c297'), (b'x-accel-buffering', b'no'), (b'Transfer-Encoding', b'chunked')])
+2026-02-05 11:00:54.017 INFO httpx: HTTP Request: POST http://0.0.0.0:8000/mcp "HTTP/1.1 200 OK"
+2026-02-05 11:00:54.017 INFO mcp.client.streamable_http: Received session ID: ed4563a46c69480099b1aeaa5c49c297
+2026-02-05 11:00:54.017 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-02-05 11:00:54.017 DEBUG mcp.client.streamable_http: SSE message: root=JSONRPCResponse(jsonrpc='2.0', id=0, result={'protocolVersion': '2025-11-25', 'capabilities': {'experimental': {}, 'prompts': {'listChanged': True}, 'resources': {'subscribe': False, 'listChanged': True}, 'tools': {'listChanged': True}}, 'serverInfo': {'name': 'WeatherCurrentServer', 'version': '1.3.0'}, 'instructions': 'Provides current weather conditions globally'})
+2026-02-05 11:00:54.017 INFO mcp.client.streamable_http: Negotiated protocol version: 2025-11-25
+2026-02-05 11:00:54.017 DEBUG httpcore.http11: response_closed.started
+2026-02-05 11:00:54.017 DEBUG httpcore.http11: response_closed.complete
+2026-02-05 11:00:54.018 DEBUG mcp.client.streamable_http: Sending client message: root=JSONRPCNotification(method='notifications/initialized', params=None, jsonrpc='2.0')
+2026-02-05 11:00:54.018 INFO clientbuild.mcp_hub: mcp_hub.refresh_tools start
+2026-02-05 11:00:54.018 DEBUG httpcore.connection: connect_tcp.started host='0.0.0.0' port=8000 local_address=None timeout=30 socket_options=None
+2026-02-05 11:00:54.018 DEBUG httpcore.connection: connect_tcp.started host='0.0.0.0' port=8000 local_address=None timeout=30 socket_options=None
+2026-02-05 11:00:54.019 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10f655c60>
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_headers.complete
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-02-05 11:00:54.019 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10f657880>
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_body.complete
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'GET']>
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: receive_response_body.failed exception=GeneratorExit()
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_headers.complete
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_body.started request=<Request [b'GET']>
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: send_request_body.complete
+2026-02-05 11:00:54.019 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'GET']>
+2026-02-05 11:00:54.020 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 202, b'Accepted', [(b'date', b'Thu, 05 Feb 2026 11:00:53 GMT'), (b'server', b'uvicorn'), (b'content-type', b'application/json'), (b'mcp-session-id', b'ed4563a46c69480099b1aeaa5c49c297'), (b'content-length', b'0')])
+2026-02-05 11:00:54.020 INFO httpx: HTTP Request: POST http://0.0.0.0:8000/mcp "HTTP/1.1 202 Accepted"
+2026-02-05 11:00:54.020 DEBUG mcp.client.streamable_http: Received 202 Accepted
+2026-02-05 11:00:54.020 DEBUG httpcore.http11: response_closed.started
+2026-02-05 11:00:54.020 DEBUG httpcore.http11: response_closed.complete
+2026-02-05 11:00:54.020 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Thu, 05 Feb 2026 11:00:53 GMT'), (b'server', b'uvicorn'), (b'cache-control', b'no-cache, no-transform'), (b'connection', b'keep-alive'), (b'content-type', b'text/event-stream'), (b'mcp-session-id', b'ed4563a46c69480099b1aeaa5c49c297'), (b'x-accel-buffering', b'no'), (b'Transfer-Encoding', b'chunked')])
+2026-02-05 11:00:54.020 INFO httpx: HTTP Request: GET http://0.0.0.0:8000/mcp "HTTP/1.1 200 OK"
+2026-02-05 11:00:54.020 DEBUG mcp.client.streamable_http: GET SSE connection established
+2026-02-05 11:00:54.020 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'GET']>
+2026-02-05 11:00:54.020 DEBUG mcp.client.streamable_http: Sending client message: root=JSONRPCRequest(method='tools/list', params=None, jsonrpc='2.0', id=1)
+2026-02-05 11:00:54.020 DEBUG httpcore.connection: connect_tcp.started host='0.0.0.0' port=8000 local_address=None timeout=30 socket_options=None
+2026-02-05 11:00:54.021 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10f657cd0>
+2026-02-05 11:00:54.021 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+2026-02-05 11:00:54.021 DEBUG httpcore.http11: send_request_headers.complete
+2026-02-05 11:00:54.021 DEBUG httpcore.http11: send_request_body.started request=<Request [b'POST']>
+2026-02-05 11:00:54.021 DEBUG httpcore.http11: send_request_body.complete
+2026-02-05 11:00:54.021 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+2026-02-05 11:00:54.022 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Thu, 05 Feb 2026 11:00:53 GMT'), (b'server', b'uvicorn'), (b'cache-control', b'no-cache, no-transform'), (b'connection', b'keep-alive'), (b'content-type', b'text/event-stream'), (b'mcp-session-id', b'ed4563a46c69480099b1aeaa5c49c297'), (b'x-accel-buffering', b'no'), (b'Transfer-Encoding', b'chunked')])
+2026-02-05 11:00:54.022 INFO httpx: HTTP Request: POST http://0.0.0.0:8000/mcp "HTTP/1.1 200 OK"
+2026-02-05 11:00:54.022 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+2026-02-05 11:00:54.023 DEBUG mcp.client.streamable_http: SSE message: root=JSONRPCResponse(jsonrpc='2.0', id=1, result={'tools': [{'name': 'get_current_weather_tool', 'description': 'get weather of a location', 'inputSchema': {'properties': {'location': {'type': 'string'}, 'detail': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}}, 'required': ['location'], 'type': 'object'}, 'outputSchema': {'properties': {'result': {'items': {'type': 'string'}, 'type': 'array'}}, 'required': ['result'], 'type': 'object', 'x-fastmcp-wrap-result': True}, '_meta': {'_fastmcp': {'tags': []}}}]})
+2026-02-05 11:00:54.023 DEBUG httpcore.http11: response_closed.started
+2026-02-05 11:00:54.023 DEBUG httpcore.http11: response_closed.complete
+2026-02-05 11:00:54.023 INFO clientbuild.mcp_hub: mcp_hub.refresh_tools done tools=1
+2026-02-05 11:00:54.028 INFO clientbuild.loop: loop.turn start=1 current={"role": "user", "content": "成都现在天气怎么样?", "tool_call_id": null, "tool_calls": null}
+2026-02-05 11:00:54.028 INFO clientbuild.planner: planner.next_action input={"role": "user", "content": "成都现在天气怎么样?", "tool_call_id": null, "tool_calls": null}
+2026-02-05 11:00:54.028 INFO clientbuild.planner: planner.next_action output=Query messages=2 tools=1
+2026-02-05 11:00:54.028 INFO clientbuild.loop: loop.action Query turn=1 messages=2 tools=1
+2026-02-05 11:00:54.144 INFO clientbuild.loop: loop.llm_request model=meta-llama-3.1-8b-instruct messages=2 tools=1 last={"role": "user", "content": "成都现在天气怎么样?", "tool_call_id": null, "tool_calls": null}
+2026-02-05 11:00:54.145 DEBUG clientbuild.loop: loop.llm_request messages_payload=[{"role": "system", "content": "你是一个会使用工具的助手。必要时调用工具，并在得到工具结果后给出最终回答。"}, {"role": "user", "content": "成都现在天气怎么样?"}]
+2026-02-05 11:00:54.145 DEBUG clientbuild.loop: loop.llm_request tools_payload=["get_current_weather_tool"]
+2026-02-05 11:00:54.149 DEBUG httpcore.http11: receive_response_body.failed exception=GeneratorExit()
+2026-02-05 11:00:54.157 DEBUG openai._base_client: Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-a8004574-7782-4212-b6bb-0bd9b4732b11', 'json_data': {'messages': [{'role': 'system', 'content': '你是一个会使用工具的助手。必要时调用工具，并在得到工具结果后给出最终回答。'}, {'role': 'user', 'content': '成都现在天气怎么样?'}], 'model': 'meta-llama-3.1-8b-instruct', 'parallel_tool_calls': False, 'tools': [{'type': 'function', 'function': {'name': 'get_current_weather_tool', 'description': 'get weather of a location', 'parameters': {'properties': {'location': {'type': 'string'}, 'detail': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}}, 'required': ['location'], 'type': 'object'}}}]}}
+2026-02-05 11:00:54.157 DEBUG openai._base_client: Sending HTTP Request: POST http://localhost:1234/v1/chat/completions
+2026-02-05 11:00:54.158 DEBUG httpcore.connection: connect_tcp.started host='localhost' port=1234 local_address=None timeout=5.0 socket_options=None
+2026-02-05 11:00:54.159 DEBUG httpcore.connection: connect_tcp.failed exception=ConnectError(OSError('All connection attempts failed'))
+2026-02-05 11:00:54.159 DEBUG openai._base_client: Encountered Exception
+Traceback (most recent call last):
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/openai/_base_client.py", line 1529, in request
+    response = await self._client.send(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+2026-02-05 11:00:54.160 DEBUG openai._base_client: 2 retries left
+2026-02-05 11:00:54.160 INFO openai._base_client: Retrying request to /chat/completions in 0.467495 seconds
+2026-02-05 11:00:54.629 DEBUG openai._base_client: Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-a8004574-7782-4212-b6bb-0bd9b4732b11', 'json_data': {'messages': [{'role': 'system', 'content': '你是一个会使用工具的助手。必要时调用工具，并在得到工具结果后给出最终回答。'}, {'role': 'user', 'content': '成都现在天气怎么样?'}], 'model': 'meta-llama-3.1-8b-instruct', 'parallel_tool_calls': False, 'tools': [{'type': 'function', 'function': {'name': 'get_current_weather_tool', 'description': 'get weather of a location', 'parameters': {'properties': {'location': {'type': 'string'}, 'detail': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}}, 'required': ['location'], 'type': 'object'}}}]}}
+2026-02-05 11:00:54.630 DEBUG openai._base_client: Sending HTTP Request: POST http://localhost:1234/v1/chat/completions
+2026-02-05 11:00:54.630 DEBUG httpcore.connection: connect_tcp.started host='localhost' port=1234 local_address=None timeout=5.0 socket_options=None
+2026-02-05 11:00:54.632 DEBUG httpcore.connection: connect_tcp.failed exception=ConnectError(OSError('All connection attempts failed'))
+2026-02-05 11:00:54.632 DEBUG openai._base_client: Encountered Exception
+Traceback (most recent call last):
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/openai/_base_client.py", line 1529, in request
+    response = await self._client.send(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+2026-02-05 11:00:54.632 DEBUG openai._base_client: 1 retry left
+2026-02-05 11:00:54.632 INFO openai._base_client: Retrying request to /chat/completions in 0.983860 seconds
+2026-02-05 11:00:55.618 DEBUG openai._base_client: Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-a8004574-7782-4212-b6bb-0bd9b4732b11', 'json_data': {'messages': [{'role': 'system', 'content': '你是一个会使用工具的助手。必要时调用工具，并在得到工具结果后给出最终回答。'}, {'role': 'user', 'content': '成都现在天气怎么样?'}], 'model': 'meta-llama-3.1-8b-instruct', 'parallel_tool_calls': False, 'tools': [{'type': 'function', 'function': {'name': 'get_current_weather_tool', 'description': 'get weather of a location', 'parameters': {'properties': {'location': {'type': 'string'}, 'detail': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}}, 'required': ['location'], 'type': 'object'}}}]}}
+2026-02-05 11:00:55.620 DEBUG openai._base_client: Sending HTTP Request: POST http://localhost:1234/v1/chat/completions
+2026-02-05 11:00:55.621 DEBUG httpcore.connection: connect_tcp.started host='localhost' port=1234 local_address=None timeout=5.0 socket_options=None
+2026-02-05 11:00:55.623 DEBUG httpcore.connection: connect_tcp.failed exception=ConnectError(OSError('All connection attempts failed'))
+2026-02-05 11:00:55.624 DEBUG openai._base_client: Encountered Exception
+Traceback (most recent call last):
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/openai/_base_client.py", line 1529, in request
+    response = await self._client.send(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+2026-02-05 11:00:55.624 DEBUG openai._base_client: Raising connection error
+2026-02-05 11:00:55.626 DEBUG httpcore.connection: connect_tcp.started host='0.0.0.0' port=8000 local_address=None timeout=30 socket_options=None
+2026-02-05 11:00:55.628 DEBUG httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x10f655540>
+2026-02-05 11:00:55.628 DEBUG httpcore.http11: send_request_headers.started request=<Request [b'DELETE']>
+2026-02-05 11:00:55.629 DEBUG httpcore.http11: send_request_headers.complete
+2026-02-05 11:00:55.629 DEBUG httpcore.http11: send_request_body.started request=<Request [b'DELETE']>
+2026-02-05 11:00:55.629 DEBUG httpcore.http11: send_request_body.complete
+2026-02-05 11:00:55.629 DEBUG httpcore.http11: receive_response_headers.started request=<Request [b'DELETE']>
+2026-02-05 11:00:55.631 DEBUG httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Thu, 05 Feb 2026 11:00:54 GMT'), (b'server', b'uvicorn'), (b'content-type', b'application/json'), (b'mcp-session-id', b'ed4563a46c69480099b1aeaa5c49c297'), (b'content-length', b'0')])
+2026-02-05 11:00:55.631 INFO httpx: HTTP Request: DELETE http://0.0.0.0:8000/mcp "HTTP/1.1 200 OK"
+2026-02-05 11:00:55.631 DEBUG httpcore.http11: receive_response_body.started request=<Request [b'DELETE']>
+2026-02-05 11:00:55.631 DEBUG httpcore.http11: receive_response_body.complete
+2026-02-05 11:00:55.631 DEBUG httpcore.http11: response_closed.started
+2026-02-05 11:00:55.632 DEBUG httpcore.http11: response_closed.complete
+2026-02-05 11:00:55.632 DEBUG httpcore.http11: receive_response_body.failed exception=CancelledError("Cancelled via cancel scope 10f655450 by <Task pending name='Task-2' coro=<Client._session_runner() running at /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/fastmcp/client/client.py:581> cb=[Task.task_wakeup()]>")
+2026-02-05 11:00:55.632 DEBUG httpcore.http11: response_closed.started
+2026-02-05 11:00:55.632 DEBUG httpcore.http11: response_closed.complete
+2026-02-05 11:00:55.633 DEBUG httpcore.connection: close.started
+2026-02-05 11:00:55.633 DEBUG httpcore.connection: close.complete

@@ -24,7 +24,7 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
 
 ### 2. Architecture
 
-    - artifacts:
+    - artifacts: 
 
     - attacks:
 
@@ -35,9 +35,9 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
         - `clientbuild/loop.py`: executes the loop (LLM tool-calls ↔ MCP tool results)
         - `clientbuild/settings.py`: configuration loader (`.env` for LLM; MCP sets + logging)
 
-    - docs
+    - docs:
 
-    - environment
+    - environment: 
 
 ### 3. Quickstart: Weather
 

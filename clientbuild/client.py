@@ -23,6 +23,15 @@ async def main() -> None:
     args = parser.parse_args()
 
     settings = load_settings()
+
+    # for debug
+    client = settings.openai_async_client()
+    print("model:", settings.model)
+    print("base_url:", getattr(client, "base_url", None))
+    import os
+    print("env OPENAI_BASE_URL:", os.environ.get("OPENAI_BASE_URL"))
+    print("env HTTPS_PROXY:", os.environ.get("HTTPS_PROXY"))
+
     _, log_path = setup_logging(
         LoggingConfig(
             enabled=settings.log_enabled,
