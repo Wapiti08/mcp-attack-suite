@@ -23,7 +23,12 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
     ```
 
 ### 2. Architecture
-
+    - pitfall_lab:
+      - suites.yaml: environment runner call
+      - taxonomy.yaml: tag and remediation advice
+      - cli.py: entrypoint for scan / report /aggregate
+      - report.py: read run -> generate pitfall_report.json + report.md
+      - aggregate.py: scan environment/runs/** -> metrics.csv/metrics.json
 
     - environment: 
       - `environment/arena/` (trusted): challenge specs + runner + validators

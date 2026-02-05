@@ -1,0 +1,5 @@
+baseline_checkup:
+  - {challenge: emailsystem, attack: tool_poisoning, submission: "<injection>"}
+  - {challenge: emailsystem, attack: puppet, submission: "path/to/user_server.py"}
+enterprise_policy:
+  - {challenge: cryptosystem, attack: rug_pull, submission: "..."}
