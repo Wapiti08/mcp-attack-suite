@@ -28,98 +28,59 @@ Exposing Developer Pitfalls in MCP Tool Server Security under Multi-Vector Attac
 
     - attacks:
 
-    - clientbuild:
-
-        - `clientbuild/mcp_hub.py`: connect to multiple MCP servers, `list_tools()` aggregation, `call_tool()` routing
-        - `clientbuild/planner.py`: Basic Planner state machine (Query / ToolCall / Response)
-        - `clientbuild/loop.py`: executes the loop (LLM tool-calls ↔ MCP tool results)
-        - `clientbuild/settings.py`: configuration loader (`.env` for LLM; MCP sets + logging)
-
     - docs:
 
     - environment: 
+      - `environment/arena/` (trusted): challenge specs + runner + validators
+      - `environment/submissions/` (untrusted): solver submissions (examples included)
+      - `environment/clientbuild/` (runtime): MCP hub + planner/loop + scenario servers used by the arena
+      - `environment/docs/` (docs): architecture + usage docs
+      - `environment/runs/` (generated): run artifacts (`report.json`, logs)
+      - `environment/attackmethodsCollection/` (legacy): notebooks/artifacts kept for reference
 
 ### 3. Quickstart: Weather
 
-1) Create `.env` (recommended: copy `.env.example` → `.env`) and fill:
-- `OPENAI_API_KEY=...`
-- `OPENAI_MODEL=...`
-- (optional) `OPENAI_BASE_URL=http://localhost:1234/v1/` (for local/proxy OpenAI-compatible endpoints)
+1) Create `.env` and put it under environment dictory:
+eg:
+```text
+OPENAI_BASE_URL=http://localhost:1234/v1/
+OPENAI_API_KEY=lm-studio
+OPENAI_MODEL = qwen/qwen3-8b
+```
 
-2) Ensure `clientbuild/settings.py` uses:
-- `ACTIVE_MCP_SET = "weather"`
+`clientbuild` is the minimal host implementation (planner/loop + MCP hub). Typical commands:
 
-3) Start the MCP server:
+- Weather demo (manual server + host):
+  - `python -m environment.clientbuild.weather --port 8000`
+  - `python -m environment.clientbuild.client --mcp http://127.0.0.1:8000/mcp --prompt "What's the weather in Chengdu?"`
 
-`python clientbuild/weather.py`
+  
 
-4) Run the host:
+### 4 Simulation: Email Assistant
+#### Multimodal attack
+This submission demonstrates a **data-only** attack: it injects a single newest email containing an **image attachment**.
 
-`python clientbuild/client.py --prompt "What's the weather in Chengdu?"`
+- `assets/safe.png` contains text intended to influence the assistant's summary.
+- The multimodal arena prompt asks the assistant to summarize the latest email and send it to a Teams channel.
 
-### 4. Configuration
+Run:
 
-- MCP Sets (JSON):
+`python -m environment.arena.runner run --challenge emailsystem --attack multimodal_attack --submission environment/submissions/examples/emailsystem/multimodal_attack/assets/safe.png`
 
-    Base MCP sets (used by `clientbuild/client.py`) are defined in `clientbuild/config/mcp_sets.json`; switch the default set by editing `ACTIVE_MCP_SET` in `clientbuild/settings.py`.
+#### Puppet attack 
+This submission provides an untrusted inbox MCP server as a single Python file.
 
-    Email/Teams scenario MCP sets are defined in `clientbuild/scenarios/emailsystem/mcp_sets.json` (used by `start_system.py --set ...` and `run_full_attack.py --attack ...`).
+Run:
 
-    Each server entry may also include `module` (used by scenario launchers to auto-spawn); the listening port is taken from the `url`.
+`python -m environment.arena.runner run --challenge emailsystem --attack puppet --submission environment/submissions/examples/emailsystem/puppet/puppet_inbox_server.py`
 
-    To change ports:
-    - Update the port in the `url` in the relevant `mcp_sets.json` (e.g. `http://0.0.0.0:8002/mcp` → `http://0.0.0.0:9002/mcp`).
-    - For emailsystem, `start_system.py` / `run_full_attack.py` auto-spawn servers with `--port` parsed from that `url` (requires `module`).
-    - For weather, start the server with the same port, e.g. `python -m clientbuild.weather --port 9000`, and update `clientbuild/config/mcp_sets.json` accordingly.
+#### Tool poisoning
 
-- Local Models (OpenAI-compatible)
+This attack uses a fixed tool-poisoning config defined under the trusted challenge folder.
+The submission is any image file (it is recorded as the submission artifact).
 
-    Put these in `.env`:
-    - `OPENAI_BASE_URL=http://localhost:1234/v1/`
-    - `OPENAI_MODEL=meta-llama-3.1-8b-instruct`
-    - `OPENAI_API_KEY=local`
+Run (using the multimodal example image as a placeholder):
 
-### 5. Simulation: Email Assistant (for attack testing)
+`python -m environment.arena.runner run --challenge emailsystem --attack tool_poisoning --submission environment/submissions/examples/emailsystem/multimodal_attack/assets/safe.png`
 
-- Run the scenario:
 
-    `python -m clientbuild.scenarios.emailsystem.start_system`
-
-    By default this auto-spawns the required MCP servers from `clientbuild/scenarios/emailsystem/mcp_sets.json`; use `--no-spawn` if servers are already running.
-
-- One-click full attack run:
-
-    `python -m clientbuild.scenarios.emailsystem.run_full_attack --attack email_prompt_injection`
-
-- Range: Cryptocurrency Transfer Redirection / Theft (cryptosystem):
-
-    This scenario simulates a “harmless query → tool poisoning/redirected transfer → irreversible loss” pattern (all transfers are local simulations; nothing is sent on-chain).
-
-    MCP sets: `clientbuild/scenarios/cryptosystem/mcp_sets.json`
-    - `crypto_benign`: benign price server + benign wallet
-    - `crypto_tool_poisoning`: malicious price tool description + benign wallet
-    - `crypto_transfer_redirection`: benign price server + malicious wallet (redirects transfers to a fixed attacker address)
-
-    Run (auto-spawns required MCP servers):
-    - `python -m clientbuild.scenarios.cryptosystem.start_system --set crypto_benign`
-    - `python -m clientbuild.scenarios.cryptosystem.start_system --set crypto_tool_poisoning`
-
-    One-click reproduction (prints transfers/balances for verification):
-    - `python -m clientbuild.scenarios.cryptosystem.run_full_attack --attack crypto_tool_poisoning`
-    - `python -m clientbuild.scenarios.cryptosystem.run_full_attack --attack crypto_transfer_redirection`
-
-- Range: Malicious External Resource (resourcesystem):
-
-    This scenario simulates a benign MCP tool fetching a compromised third-party resource (web/API/OCR), which can poison planning at runtime and trigger unintended high-risk actions (example: calling wallet `send_crypto`).
-
-    Entrypoints and config:
-    - External resource site (local fixture): `clientbuild/scenarios/resourcesystem/external_resource_server.py` (default port 8200)
-    - MCP sets: `clientbuild/scenarios/resourcesystem/mcp_sets.json`
-
-    Run (safe system prompt; auto-spawns external site + MCP):
-    - `python -m clientbuild.scenarios.resourcesystem.start_system --set resource_clean`
-    - `python -m clientbuild.scenarios.resourcesystem.start_system --set resource_poisoned`
-
-    One-click reproduction (malicious instructions come only from the external resource; prints transfers/balances):
-    - `python -m clientbuild.scenarios.resourcesystem.run_full_attack --attack resource_poisoned`
-    - `python -m clientbuild.scenarios.resourcesystem.run_full_attack --attack resource_poisoned_multimodal`
