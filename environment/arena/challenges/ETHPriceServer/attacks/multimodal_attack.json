@@ -1,0 +1,9 @@
+{
+  "attack_type": "multimodal_attack",
+  "submission_kind": "image",
+  "spec_file": "spec_multimodal_attack.json",
+  "attacker_identity": {
+    "attacker_marker": "attacker@evil.com"
+  }
+}
+
