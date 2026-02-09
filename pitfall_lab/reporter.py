@@ -3,7 +3,6 @@ Pitfall Lab Reporter - Generate formatted reports from run analysis.
 
 Supports multiple output formats:
 - Markdown (.md)
-- HTML (.html)
 - JSON (.json)
 """
 from __future__ import annotations
@@ -212,9 +211,9 @@ def generate_report(
     
     Args:
         analysis: Parsed run analysis
-        format: Output format ('markdown', 'html', 'json')
+        format: Output format ('markdown', 'json')
         output_path: Optional output file path (auto-generated if None)
-        verbose: Include detailed information (for markdown/html)
+        verbose: Include detailed information (for markdown)
     
     Returns:
         Path to generated report file
@@ -226,14 +225,11 @@ def generate_report(
     if format == "markdown":
         content = generate_markdown_report(analysis, verbose=verbose)
         ext = ".md"
-    elif format == "html":
-        content = generate_html_report(analysis, verbose=verbose)
-        ext = ".html"
     elif format == "json":
         content = generate_json_report(analysis)
         ext = ".json"
     else:
-        raise ValueError(f"Unsupported format: {format}. Use 'markdown', 'html', or 'json'.")
+        raise ValueError(f"Unsupported format: {format}. Use 'markdown', or 'json'.")
     
     # Determine output path
     if output_path is None:
