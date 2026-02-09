@@ -1,7 +1,0 @@
-tool_poisoning:
-  summary: "Tool description/schema can be abused to change intent"
-  fix:
-    - "Minimize tool description; avoid natural-language instructions"
-    - "Add server-side allowlist validation for critical args (e.g., channel/email)"
-prompt_injection:
-  ...
