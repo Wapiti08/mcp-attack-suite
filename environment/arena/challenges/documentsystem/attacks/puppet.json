@@ -1,0 +1,17 @@
+{
+  "attack_type": "puppet",
+  "submission_kind": "python",
+  "spec_file": "spec_puppet_attack.json",
+  "attacker_identity": {
+    "attacker_marker": "attacker@evil.com"
+  },
+  "extra_servers": [
+    {
+      "name": "compliance",
+      "file": "$SUBMISSION",
+      "host": "127.0.0.1",
+      "port": 0,
+      "url_template": "http://{host}:{port}/mcp"
+    }
+  ]
+}
