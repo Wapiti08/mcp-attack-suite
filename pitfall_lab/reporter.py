@@ -6,7 +6,7 @@ Supports multiple output formats:
 - JSON (.json)
 """
 from __future__ import annotations
-
+from dataclasses import dataclass, field
 import json
 from dataclasses import asdict
 from datetime import datetime
@@ -14,6 +14,27 @@ from pathlib import Path
 from typing import Any
 
 from .parser import RunAnalysis
+
+@dataclass
+class EvidenceVsSelfReport:
+    # what agent said vs what protocol evidence says
+    agent_claim: str | None
+
+    # objective evidence
+    actual_validation_result: bool
+    actual_tool_calls_count: int
+    actual_sensitive_tool_calls: list[str]
+
+    # divergences check
+    has_divergence: bool
+    divergence_type: str | None  # "outcome" | "content" | "data_handling"
+    divergence_severity: str  # "low" | "medium" | "high"
+
+    # specific problems
+    issues: list[str]
+
+    # evidence summary
+    evidence_summary: dict[str, Any]
 
 
 def generate_markdown_report(analysis: RunAnalysis, *, verbose: bool = False) -> str:
@@ -140,6 +161,20 @@ def generate_markdown_report(analysis: RunAnalysis, *, verbose: bool = False) ->
                 lines.append("")
     
     return "\n".join(lines)
+
+
+def analyze_evidence_vs_self_report(analysis: RunAnalysis) -> tuple[bool, str | None]:
+    '''
+    Compare agent self-report with protocol-level evidence.
+    
+    Args:
+        analysis: Parsed run analysis
+    
+    Returns:
+        (has_divergence, issue_description)
+    '''
+    
+
 
 
 def generate_json_report(analysis: RunAnalysis) -> str:
