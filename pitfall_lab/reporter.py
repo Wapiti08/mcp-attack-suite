@@ -14,28 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .parser import RunAnalysis
-
-@dataclass
-class EvidenceVsSelfReport:
-    # what agent said vs what protocol evidence says
-    agent_claim: str | None
-
-    # objective evidence
-    actual_validation_result: bool
-    actual_tool_calls_count: int
-    actual_sensitive_tool_calls: list[str]
-
-    # divergences check
-    has_divergence: bool
-    divergence_type: str | None  # "outcome" | "content" | "data_handling"
-    divergence_severity: str  # "low" | "medium" | "high"
-
-    # specific problems
-    issues: list[str]
-
-    # evidence summary
-    evidence_summary: dict[str, Any]
-
+from .evidence import analyze_evidence_vs_self_report, EvidenceVsSelfReport
 
 def generate_markdown_report(analysis: RunAnalysis, *, verbose: bool = False) -> str:
     """
@@ -48,24 +27,35 @@ def generate_markdown_report(analysis: RunAnalysis, *, verbose: bool = False) ->
     Returns:
         Markdown-formatted report string
     """
-    lines = [
-        f"# Run Report: {analysis.run_id}",
-        "",
-        f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        "",
-        "## Summary",
-        "",
-        f"- **Challenge:** {analysis.challenge_id}",
-        f"- **Attack Type:** {analysis.attack_type}",
-        f"- **Submission:** `{analysis.submission_path}`",
-        f"- **Result:** {'✓ SUCCESS' if analysis.success else '✗ FAILED'}",
-        "",
-        "## Validation Results",
-        "",
-        f"- **Objective:** {analysis.validation.objective_type}",
-        f"- **Attacker Identity:** {analysis.validation.attacker_identity}",
-        f"- **Objective Hit:** {analysis.validation.hit}",
-    ]
+    lines = []
+    
+    # Title
+    lines.append(f"# Run Report: {analysis.run_id}")
+    lines.append("")
+    
+    # Metadata
+    lines.append("## Summary")
+    lines.append("")
+    lines.append(f"- **Challenge:** {analysis.challenge_id}")
+    lines.append(f"- **Attack:** {analysis.attack_type}")
+    lines.append(f"- **Success:** {'✓ Yes' if analysis.success else '✗ No'}")
+    lines.append(f"- **Total Turns:** {analysis.total_turns}")
+    lines.append(f"- **Total Tool Calls:** {len(analysis.all_tool_calls)}")
+    lines.append("")
+    
+    # Evidence-Based Validation Section
+    evidence = analyze_evidence_vs_self_report(analysis)
+    lines.append(format_evidence_section(evidence))
+    lines.append("")
+    
+    # Validation Results
+    lines.append("## Validation Results")
+    lines.append("")
+    lines.append(f"- **Objective Type:** `{analysis.validation.objective_type}`")
+    lines.append(f"- **Hit:** {analysis.validation.hit}")
+    
+    if analysis.validation.attacker_identity:
+        lines.append(f"- **Attacker Identity:** `{analysis.validation.attacker_identity}`")
     
     if analysis.validation.error:
         lines.append(f"- **Error:** {analysis.validation.error}")
@@ -162,22 +152,114 @@ def generate_markdown_report(analysis: RunAnalysis, *, verbose: bool = False) ->
     
     return "\n".join(lines)
 
+def format_evidence_section(evidence: EvidenceVsSelfReport) -> str:
+    """
+    Format evidence vs self-report section for Markdown report.
 
-def analyze_evidence_vs_self_report(analysis: RunAnalysis) -> tuple[bool, str | None]:
-    '''
-    Compare agent self-report with protocol-level evidence.
-    
     Args:
-        analysis: Parsed run analysis
-    
+    evidence: Evidence analysis results
+
     Returns:
-        (has_divergence, issue_description)
-    '''
-    
+        Markdown formatted string
+    """
+    lines = []
+
+    # Header
+    lines.append("## Evidence-Based Validation")
+    lines.append("")
+    lines.append("*(Protocol-level evidence vs agent self-report)*")
+    lines.append("")
+
+    # No divergence case
+    if not evidence.has_divergence:
+        lines.append("✅ **No divergence detected**")
+        lines.append("")
+        lines.append("Agent's self-report aligns with protocol-level evidence.")
+        return "\n".join(lines)
+
+    # Divergence detected
+    severity_emoji = {
+        "critical": "🔴",
+        "high": "🟠",
+        "medium": "🟡",
+        "low": "🟢",
+        "none": "⚪"
+    }
+
+    emoji = severity_emoji.get(evidence.divergence_severity, "⚠️")
+
+    lines.append(f"{emoji} **DIVERGENCE DETECTED** (Severity: {evidence.divergence_severity.upper()})")
+    lines.append("")
+
+    # Divergence types
+    if evidence.divergence_types:
+        types_str = ", ".join([t.replace("_", " ").title() for t in evidence.divergence_types])
+        lines.append(f"**Types:** {types_str}")
+        lines.append("")
+
+    # Agent's claim
+    if evidence.agent_claim:
+        lines.append("### Agent Claimed:")
+        lines.append("")
+        # Truncate long outputs
+        claim = evidence.agent_claim[:300]
+        if len(evidence.agent_claim) > 300:
+            claim += "..."
+        lines.append(f"> {claim}")
+        lines.append("")
+
+    # Protocol evidence
+    lines.append("### Protocol Evidence Shows:")
+    lines.append("")
+    lines.append(f"- **Validation Result:** {'✓ Objective hit' if evidence.actual_validation_result else '✗ Objective not hit'}")
+    lines.append(f"- **Tool Calls Executed:** {evidence.actual_tool_calls_count}")
+
+    if evidence.actual_sensitive_tool_calls:
+        lines.append(f"- **Sensitive Operations:** {', '.join(evidence.actual_sensitive_tool_calls[:5])}")
+
+    lines.append("")
+
+    # Issues
+    if evidence.issues:
+        lines.append("### Issues Identified:")
+        lines.append("")
+        
+        for i, issue in enumerate(evidence.issues, 1):
+            # Issues might be multi-line
+            lines.append(f"**{i}. {issue.split(':')[0] if ':' in issue else 'Issue'}**")
+            lines.append("")
+            # Indent issue details
+            issue_lines = issue.split('\n')
+            for line in issue_lines:
+                if line.strip():
+                    lines.append(f"   {line}")
+            lines.append("")
+
+    # Evidence summary
+    lines.append("### Evidence Summary:")
+    lines.append("")
+    lines.append("```json")
+    lines.append(json.dumps(evidence.evidence_summary, indent=2))
+    lines.append("```")
+    lines.append("")
+
+    # Developer guidance
+    if evidence.divergence_severity in ["critical", "high"]:
+        lines.append("### ⚠️ Action Required:")
+        lines.append("")
+        lines.append("This divergence indicates a **trust calibration problem**: developers ")
+        lines.append("relying on agent self-report would have incorrect understanding of what happened.")
+        lines.append("")
+        lines.append("**Recommendations:**")
+        lines.append("- Review agent planning logic")
+        lines.append("- Implement server-side validation for sensitive operations")
+        lines.append("- Add explicit approval gates for high-risk actions")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
-
-def generate_json_report(analysis: RunAnalysis) -> str:
+def generate_json_report(analysis: RunAnalysis, *, verbose: bool = False) -> dict[str, Any]:
     """
     Generate a JSON report from run analysis.
     
@@ -187,52 +269,61 @@ def generate_json_report(analysis: RunAnalysis) -> str:
     Returns:
         JSON-formatted report string
     """
+    # analyze evidence
+    evidence = analyze_evidence_vs_self_report(analysis)
+
     report = {
         "run_id": analysis.run_id,
         "challenge_id": analysis.challenge_id,
         "attack_type": analysis.attack_type,
-        "submission_path": analysis.submission_path,
         "success": analysis.success,
-        "generated_at": datetime.now().isoformat(),
+        "total_turns": analysis.total_turns,
+        
+        # Evidence analysis
+        "evidence_analysis": {
+            "has_divergence": evidence.has_divergence,
+            "divergence_types": evidence.divergence_types,
+            "divergence_severity": evidence.divergence_severity,
+            "issues_count": len(evidence.issues),
+            "issues": evidence.issues,
+            "agent_claim": evidence.agent_claim,
+            "actual_validation_result": evidence.actual_validation_result,
+            "evidence_summary": evidence.evidence_summary
+        },
+        
         "validation": {
             "objective_type": analysis.validation.objective_type,
-            "attacker_identity": analysis.validation.attacker_identity,
             "hit": analysis.validation.hit,
-            "evidence": analysis.validation.evidence,
+            "attacker_identity": analysis.validation.attacker_identity,
             "error": analysis.validation.error,
+            "evidence": analysis.validation.evidence
         },
+        
         "statistics": {
-            "total_turns": analysis.total_turns,
-            "total_tool_calls": analysis.total_tool_calls,
-            "failed_tool_calls": len(analysis.get_failed_tool_calls()),
-        },
-        "servers": analysis.servers,
-        "agent_final_output": analysis.agent_final_output,
-        "tool_calls": [
+            "total_tool_calls": len(analysis.all_tool_calls),
+            "successful_tool_calls": len([tc for tc in analysis.all_tool_calls if tc.success]),
+            "unique_tools": list(analysis.unique_tools)
+        }
+    }
+    
+    # Optional: detailed tool calls
+    if verbose:
+        report["tool_calls"] = [
             {
                 "turn": tc.turn,
                 "server": tc.server,
-                "tool_name": tc.tool_name,
-                "exposed_name": tc.exposed_name,
+                "tool": tc.tool_name,
                 "args": tc.args,
                 "result": tc.result,
-                "success": tc.success,
-                "timestamp": tc.timestamp,
+                "success": tc.success
             }
             for tc in analysis.all_tool_calls
-        ],
-        "turns": [
-            {
-                "turn_number": turn.turn_number,
-                "timestamp": turn.timestamp,
-                "tool_calls_count": len(turn.tool_calls),
-            }
-            for turn in analysis.turns
-        ],
-    }
+        ]
     
-    return json.dumps(report, indent=2, ensure_ascii=False)
-
+    if analysis.agent_final_output:
+        report["agent_output"] = analysis.agent_final_output
+    
+    return report
 
 def generate_report(
     analysis: RunAnalysis,
@@ -261,8 +352,9 @@ def generate_report(
         content = generate_markdown_report(analysis, verbose=verbose)
         ext = ".md"
     elif format == "json":
-        content = generate_json_report(analysis)
-        ext = ".json"
+        report_dict = generate_json_report(analysis)
+        content = json.dumps(report_dict, indent=2, ensure_ascii=False)
+        extension = ".json"
     else:
         raise ValueError(f"Unsupported format: {format}. Use 'markdown', or 'json'.")
     
