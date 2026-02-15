@@ -378,3 +378,273 @@ class PitfallLabEvaluator:
         ]
 
         tool_names = [tool["name"] for tool in schema.get("tools", [])]
+
+        for tool_name in tool_names:
+            # Check if tool has sensitive parameters
+            tool_schema = next(
+                (t for t in schema.get("tools", []) if t["name"] == tool_name),
+                None
+            )
+            
+            if not tool_schema:
+                continue
+
+            properties = tool_schema.get("inputSchema", {}).get("properties", {})
+            has_sensitive_params = any(
+                any(sensitive in param_name.lower() for sensitive in 
+                    ["recipient", "to", "address", "path", "file", "url", "command", "query"])
+                for param_name in properties.keys()
+            )
+
+            if not has_sensitive_params:
+                continue
+
+            # find function body
+            func_pattern = rf"(?:async\s+)?def\s+{re.escape(tool_name)}\s*\([^)]*\):"   
+            match = re.search(func_pattern, code)
+
+            if match:
+                start_pos = match.end()
+                next_def = re.search(r"\n(?:def|class|@)\s", code[start_pos:])
+                if next_def:
+                    func_body = code[start_pos:start_pos + next_def.start()]
+                else:
+                    func_body = code[start_pos:]
+                
+                # check for validation
+                has_validation = any(re.search(p, func_body) for p in validation_patterns)
+
+                if not has_validation:
+                    findings.append(PitfallFinding(
+                        pitfall="P6: Unvalidated Inputs",
+                        severity="HIGH",
+                        tool=tool_name,
+                        evidence="No input validation found for sensitive parameters",
+                        mitigation="Add server-side validation (allowlists, format checks, etc.)"
+                    ))
+        
+        return findings
+    
+    def map_server_to_canonical(self, server_schema: dict) -> dict[str, str]:
+        '''
+        map server's tools to canonical tool semantics
+
+        returns: {canonical_tool: actual_tool_name}
+        '''
+        tool_map = {}
+        
+        for tool in server_schema.get("tools", []):
+            tool_name = tool.get("name", "")
+            
+            # Try to match to a canonical category
+            for category, mapping in self.tool_mappings.items():
+                # Direct match
+                if tool_name in mapping["variants"]:
+                    tool_map[mapping["canonical"]] = tool_name
+                    break
+                
+                # Fuzzy matching
+                tool_lower = tool_name.lower()
+                if any(variant in tool_lower for variant in mapping["variants"]):
+                    tool_map[mapping["canonical"]] = tool_name
+                    break
+        
+        return tool_map
+    
+    def _check_scenario_compatibility(self, server_schema: dict) -> dict:
+        ''' check which standard scnearios are compatiable with this server
+        
+        '''
+
+        tool_map = self.map_server_to_canonical(server_schema)
+
+        # define standard scenarios and their requirements
+        scenarios = {
+            "email_exfiltration": ["data_source", "messaging"],
+            "tool_poisoning_messaging": ["messaging"],
+            "cross_tool_forwarding": ["data_source", "messaging"],
+            "resource_access": ["resource_access"],
+            "transaction_manipulation": ["transaction"]
+        }
+
+        compatibility = {}
+
+        for scenario_name, required_categories in scenarios.items():
+            # check if all required tools are available
+            missing = []
+            for category in required_categories:
+                canonical =self.tool_mappings[category]["canonical"]
+                if canonical not in tool_map:
+                    missing.append(category)
+            
+            compatibility[scenario_name] = {
+                "compatible": len(missing) == 0,
+                "missing_categories": missing,
+                "mapped_tools": {
+                    cat: tool_map.get(self.tool_mappings[cat]["canonical"])
+                    for cat in required_categories
+                    if self.tool_mappings[cat]["canonical"] in tool_map
+                }
+            }
+        
+        return compatibility
+    
+    def _aggregate_pitfalls(self, report: dict) -> dict:
+        """Aggregate pitfall findings"""
+
+        pitfalls = {}
+
+        # Add static analysis findings
+        for finding in report["static_analysis"]["findings"]:
+            pitfall = finding["pitfall"]
+            if pitfall not in pitfalls:
+                pitfalls[pitfall] = {
+                    "count": 0,
+                    "severity": finding["severity"],
+                    "tools_affected": [],
+                    "examples": []
+                }
+            
+            pitfalls[pitfall]["count"] += 1
+            if finding.get("tool"):
+                pitfalls[pitfall]["tools_affected"].append(finding["tool"])
+            pitfalls[pitfall]["examples"].append(finding)
+        
+        return pitfalls
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Pitfall Lab: Protocol-aware MCP server security evaluation",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Static analysis only (fast, works on any server)
+  python evaluate_pitfall_lab.py \\
+    --server-code my_server.py \\
+    --server-schema my_schema.json \\
+    --static-only
+
+  # Full evaluation with scenario compatibility check
+  python evaluate_pitfall_lab.py \\
+    --challenge emailsystem \\
+    --server-code email_server.py \\
+    --server-schema email_schema.json
+        """
+    )
+    
+    parser.add_argument(
+        "--server-code",
+        type=Path,
+        required=True,
+        help="Path to MCP server code"
+    )
+    
+    parser.add_argument(
+        "--server-schema",
+        type=Path,
+        required=True,
+        help="Path to server schema JSON file"
+    )
+    
+    parser.add_argument(
+        "--challenge",
+        help="Challenge name (for scenario compatibility check)"
+    )
+    
+    parser.add_argument(
+        "--static-only",
+        action="store_true",
+        help="Only run static analysis (faster, no scenario checks)"
+    )
+    
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Output file for results (default: pitfall_<timestamp>.json)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Validate inputs
+    if not args.server_code.exists():
+        print(f"Error: Server code not found: {args.server_code}")
+        return 1
+    
+    if not args.server_schema.exists():
+        print(f"Error: Server schema not found: {args.server_schema}")
+        return 1
+    
+    # Load schema
+    with open(args.server_schema) as f:
+        schema = json.load(f)
+    
+    # Create evaluator
+    evaluator = PitfallLabEvaluator()
+    
+    # Run evaluation
+    print(f"\n{'='*70}")
+    print(f"PITFALL LAB EVALUATION")
+    print(f"{'='*70}")
+    print(f"Server Code: {args.server_code}")
+    print(f"Server Schema: {args.server_schema}")
+    print(f"Mode: {'Static Analysis Only' if args.static_only else 'Full Evaluation'}")
+    print(f"{'='*70}\n")
+    
+    report = evaluator.evaluate_server(
+        server_code=args.server_code,
+        server_schema=schema,
+        static_only=args.static_only
+    )
+    
+    # Print results
+    print(f"Static Analysis Results:")
+    print(f"  Total Findings: {report['static_analysis']['total_findings']}")
+    for severity, count in report['static_analysis']['findings_by_severity'].items():
+        if count > 0:
+            print(f"  {severity}: {count}")
+    
+    if not args.static_only:
+        print(f"\nTool Mapping:")
+        if report['tool_mapping']:
+            for canonical, actual in report['tool_mapping'].items():
+                print(f"  {canonical} → {actual}")
+        else:
+            print(f"  No standard tool patterns detected")
+        
+        print(f"\nScenario Compatibility:")
+        for scenario, compat in report['scenario_compatibility'].items():
+            status = "✓" if compat['compatible'] else "✗"
+            print(f"  {status} {scenario}")
+            if not compat['compatible']:
+                print(f"      Missing: {', '.join(compat['missing_categories'])}")
+    
+    print(f"\nPitfall Summary:")
+    if report['pitfall_summary']:
+        for pitfall, details in report['pitfall_summary'].items():
+            print(f"  {pitfall}: {details['count']} occurrence(s) ({details['severity']})")
+    else:
+        print(f"  No pitfalls detected ✓")
+    
+    # Save results
+    if args.output:
+        output_path = args.output
+    else:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = Path(f"pitfall_report_{timestamp}.json")
+    
+    with open(output_path, "w") as f:
+        json.dump(report, f, indent=2)
+    
+    print(f"\n✅ Report saved to: {output_path}\n")
+    
+    # Return exit code based on severity
+    high_severity = report['static_analysis']['findings_by_severity'].get('HIGH', 0)
+    if high_severity > 0:
+        print(f"⚠️  Found {high_severity} HIGH severity issue(s)")
+        return 1
+    
+    return 0
+
+
+if __name__ == "__main__":
+    exit(main())

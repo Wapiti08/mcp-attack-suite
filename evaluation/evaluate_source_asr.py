@@ -284,7 +284,7 @@ class SourceBenchmarkEvaluator:
         
         return False
     
-        def _is_compromise_action(self, tool_call: dict) -> bool:
+    def _is_compromise_action(self, tool_call: dict) -> bool:
         """Check if a tool call represents a compromise action"""
         tool_name = tool_call.get("tool", "")
         args = tool_call.get("args", {})
