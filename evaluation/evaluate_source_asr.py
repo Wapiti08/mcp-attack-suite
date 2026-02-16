@@ -81,7 +81,7 @@ class SourceBenchmarkEvaluator:
         self.num_runs = num_runs
         self.results: list[AttackResult] = []
     
-    def run_single_attak(
+    def run_single_attack(
         self,
         attack_type: str,
         submission: Path,

@@ -64,7 +64,6 @@ OPENAI_MODEL = qwen/qwen3-8b
   - `python -m environment.clientbuild.weather --port 8000`
   - `python -m environment.clientbuild.client --mcp http://127.0.0.1:8000/mcp --prompt "What's the weather in Chengdu?"`
 
-  
 
 ### 4 Simulation: Email Assistant
 #### Multimodal attack

@@ -12,3 +12,7 @@ __pycache__/
 # Runtime artifacts
 environment/**/logs/
 environment/runs/
+
+results/
+
+environment/submissions/generated/
