@@ -1,0 +1,151 @@
+# models_config.yaml
+# Model configurations for multi-model batch evaluation
+
+models:
+  # ============================================================================
+  # Anthropic Claude Models
+  # ============================================================================
+  
+  # Flagship models
+  - id: claude-sonnet-4-20250514
+    name: Claude Sonnet 4
+    provider: anthropic
+    tier: flagship
+    cost_per_mtok_input: 3.00
+    cost_per_mtok_output: 15.00
+    enabled: true
+    notes: Latest flagship model from Anthropic
+
+  # Legacy models (for baseline comparison)
+  - id: claude-3-opus-20240229
+    name: Claude 3 Opus
+    provider: anthropic
+    tier: legacy
+    cost_per_mtok_input: 15.00
+    cost_per_mtok_output: 75.00
+    enabled: false
+    
+  - id: claude-3-sonnet-20240229
+    name: Claude 3 Sonnet
+    provider: anthropic
+    tier: legacy
+    cost_per_mtok_input: 3.00
+    cost_per_mtok_output: 15.00
+    enabled: false
+
+  # ============================================================================
+  # OpenAI GPT Models
+  # ============================================================================
+  
+  - id: gpt-4o-mini
+    name: GPT-4o mini
+    provider: openai
+    tier: fast
+    cost_per_mtok_input: 0.15
+    cost_per_mtok_output: 0.60
+    enabled: true
+    notes: Fast and affordable GPT-4o variant
+    
+  - id: gpt-3.5-turbo
+    name: GPT-3.5 Turbo
+    provider: openai
+    tier: legacy
+    cost_per_mtok_input: 0.50
+    cost_per_mtok_output: 1.50
+    enabled: true
+    notes: Legacy model for baseline and budget testing
+
+  # ============================================================================
+  # Google Gemini Models
+  # ============================================================================
+  
+  - id: gemini-2.0-flash-exp
+    name: Gemini 2.0 Flash (Experimental)
+    provider: google
+    tier: flagship
+    cost_per_mtok_input: 0.00  # Free during preview
+    cost_per_mtok_output: 0.00
+    enabled: true
+    notes: Latest experimental Gemini model
+    
+  - id: gemini-1.5-flash
+    name: Gemini 1.5 Flash
+    provider: google
+    tier: fast
+    cost_per_mtok_input: 0.075
+    cost_per_mtok_output: 0.30
+    enabled: false
+    notes: Fast and efficient Gemini variant
+
+  # ============================================================================
+  # Alibaba Qwen Models
+  # ============================================================================
+  
+  - id: qwen-max
+    name: Qwen Max
+    provider: alibaba
+    tier: flagship
+    cost_per_mtok_input: 0.40  # Approximate pricing
+    cost_per_mtok_output: 1.20
+    enabled: true
+    notes: Flagship Qwen model
+    
+  - id: qwen-plus
+    name: Qwen Plus
+    provider: alibaba
+    tier: strong
+    cost_per_mtok_input: 0.20
+    cost_per_mtok_output: 0.60
+    enabled: true
+    notes: Balanced performance and cost
+    
+  - id: qwen-turbo
+    name: Qwen Turbo
+    provider: alibaba
+    tier: fast
+    cost_per_mtok_input: 0.04
+    cost_per_mtok_output: 0.12
+    enabled: true
+    notes: Fast and affordable Qwen variant
+
+# Attack configurations
+attack_types:
+  - id: tool_poisoning
+    name: Tool Poisoning
+    description: Malicious instructions injected into tool descriptions
+    enabled: true
+    
+  - id: multimodal_attack
+    name: Multimodal Attack
+    description: Malicious instructions embedded in images
+    enabled: true
+    
+  - id: puppet
+    name: Puppet Server
+    description: Attacker-controlled MCP server
+    enabled: true
+
+# Challenge configurations
+challenges:
+  - id: emailsystem
+    name: Email System
+    description: Email and Teams integration scenario
+    enabled: true
+    
+  - id: documentsystem
+    name: Document System
+    description: Document management and sharing scenario
+    enabled: true
+    
+  - id: ETHPriceServer
+    name: ETH Price Server
+    description: Cryptocurrency price checking scenario
+    enabled: true
+
+# Evaluation settings
+evaluation:
+  default_runs: 3
+  timeout_seconds: 120
+  parallel_jobs: 1  # Increase for faster evaluation
+  retry_on_failure: true
+  max_retries: 2

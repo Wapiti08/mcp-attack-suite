@@ -102,3 +102,15 @@ python -m environment.arena.runner run --challenge emailsystem --attack tool_poi
 
 See readme.md under pitfall_lab.
 
+## Evaluation 
+
+See evaluation_README.md for detailed information.
+
+- Batch mode:
+
+```
+# on root path
+python evaluation/multi_model_evaluator.py \
+  --submissions-dir environment/submissions/generated \
+  --config evaluation/models_config.yaml
+```
