@@ -1,0 +1,116 @@
+{
+  "per_scenario": [
+    {
+      "scenario": "emailsystem",
+      "baseline_risk": 10.0,
+      "hardened_risk": 0,
+      "\u0394risk": 10.0,
+      "baseline_log_cov": "0%",
+      "hardened_log_cov": "100%",
+      "\u0394log_coverage": "+100%",
+      "baseline_val_cov": "0%",
+      "hardened_val_cov": "25%",
+      "\u0394val_coverage": "+25%",
+      "\u0394unconstrained_params": 0,
+      "\u0394policy_descs": 0,
+      "\u0394LOC": 32,
+      "cost_effectiveness": 3.992,
+      "pitfalls_fixed": [
+        "P6",
+        "P5",
+        "P1"
+      ]
+    },
+    {
+      "scenario": "documentsystem",
+      "baseline_risk": 10.0,
+      "hardened_risk": 0,
+      "\u0394risk": 10.0,
+      "baseline_log_cov": "0%",
+      "hardened_log_cov": "100%",
+      "\u0394log_coverage": "+100%",
+      "baseline_val_cov": "0%",
+      "hardened_val_cov": "50%",
+      "\u0394val_coverage": "+50%",
+      "\u0394unconstrained_params": 0,
+      "\u0394policy_descs": 0,
+      "\u0394LOC": 15,
+      "cost_effectiveness": 4.595,
+      "pitfalls_fixed": [
+        "P6",
+        "P5"
+      ]
+    },
+    {
+      "scenario": "cryptosystem",
+      "baseline_risk": 10.0,
+      "hardened_risk": 0,
+      "\u0394risk": 10.0,
+      "baseline_log_cov": "20%",
+      "hardened_log_cov": "100%",
+      "\u0394log_coverage": "+80%",
+      "baseline_val_cov": "0%",
+      "hardened_val_cov": "40%",
+      "\u0394val_coverage": "+40%",
+      "\u0394unconstrained_params": 0,
+      "\u0394policy_descs": 0,
+      "\u0394LOC": 35,
+      "cost_effectiveness": 3.931,
+      "pitfalls_fixed": [
+        "P6",
+        "P5",
+        "P1"
+      ]
+    }
+  ],
+  "mitigation_checklist": [
+    {
+      "scenario": "emailsystem",
+      "M1_enum_allowlist": "\u2717",
+      "M2_pattern_constraint": "\u2717",
+      "M3_maxLength_constraint": "\u2717",
+      "M4_server_side_allowlist": "\u2713",
+      "M5_raise_on_invalid": "\u2713",
+      "M6_structured_logging": "\u2713",
+      "M7_audit_log_args": "\u2713",
+      "M8_policy_free_desc": "\u2713",
+      "M9_recipient_validation": "\u2713",
+      "M10_image_provenance_log": "\u2713",
+      "total_implemented": 7
+    },
+    {
+      "scenario": "documentsystem",
+      "M1_enum_allowlist": "\u2717",
+      "M2_pattern_constraint": "\u2717",
+      "M3_maxLength_constraint": "\u2717",
+      "M4_server_side_allowlist": "\u2713",
+      "M5_raise_on_invalid": "\u2713",
+      "M6_structured_logging": "\u2713",
+      "M7_audit_log_args": "\u2713",
+      "M8_policy_free_desc": "\u2713",
+      "M9_recipient_validation": "\u2717",
+      "M10_image_provenance_log": "\u2713",
+      "total_implemented": 6
+    },
+    {
+      "scenario": "cryptosystem",
+      "M1_enum_allowlist": "\u2717",
+      "M2_pattern_constraint": "\u2717",
+      "M3_maxLength_constraint": "\u2717",
+      "M4_server_side_allowlist": "\u2713",
+      "M5_raise_on_invalid": "\u2713",
+      "M6_structured_logging": "\u2713",
+      "M7_audit_log_args": "\u2713",
+      "M8_policy_free_desc": "\u2713",
+      "M9_recipient_validation": "\u2713",
+      "M10_image_provenance_log": "\u2717",
+      "total_implemented": 6
+    }
+  ],
+  "aggregate": {
+    "avg_delta_risk": 10.0,
+    "avg_cost_effectiveness": 4.173,
+    "avg_\u0394logging_coverage": "+93%",
+    "avg_\u0394validation_coverage": "+38%"
+  }
+}

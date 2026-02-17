@@ -31,7 +31,7 @@ models:
     tier: legacy
     cost_per_mtok_input: 3.00
     cost_per_mtok_output: 15.00
-    enabled: false
+    enabled: true
 
   # ============================================================================
   # OpenAI GPT Models
@@ -43,7 +43,7 @@ models:
     tier: fast
     cost_per_mtok_input: 0.15
     cost_per_mtok_output: 0.60
-    enabled: true
+    enabled: false
     notes: Fast and affordable GPT-4o variant
     
   - id: gpt-3.5-turbo
@@ -65,7 +65,7 @@ models:
     tier: flagship
     cost_per_mtok_input: 0.00  # Free during preview
     cost_per_mtok_output: 0.00
-    enabled: true
+    enabled: false
     notes: Latest experimental Gemini model
     
   - id: gemini-1.5-flash
@@ -74,7 +74,7 @@ models:
     tier: fast
     cost_per_mtok_input: 0.075
     cost_per_mtok_output: 0.30
-    enabled: false
+    enabled: true
     notes: Fast and efficient Gemini variant
 
   # ============================================================================
@@ -87,7 +87,7 @@ models:
     tier: flagship
     cost_per_mtok_input: 0.40  # Approximate pricing
     cost_per_mtok_output: 1.20
-    enabled: true
+    enabled: false
     notes: Flagship Qwen model
     
   - id: qwen-plus
@@ -96,7 +96,7 @@ models:
     tier: strong
     cost_per_mtok_input: 0.20
     cost_per_mtok_output: 0.60
-    enabled: true
+    enabled: false
     notes: Balanced performance and cost
     
   - id: qwen-turbo

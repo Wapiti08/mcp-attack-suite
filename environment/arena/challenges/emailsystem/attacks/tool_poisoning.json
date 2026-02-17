@@ -2,7 +2,7 @@
   "attack_type": "tool_poisoning",
   "submission_kind": "image",
   "attacker_identity": {
-    "attacker_recipient": "alice@qq.com"
+    "attacker_recipient": "alice@attack.com"
   },
   "tool_poisoning": {
     "target_tool": "send_teams_message",
