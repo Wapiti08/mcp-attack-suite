@@ -1,0 +1,53 @@
+{
+  "server": "email_hardened",
+  "total_findings": 0,
+  "detected_classes": [],
+  "per_class": {
+    "P1": {
+      "outcome": "TN",
+      "detected": false,
+      "gt": false
+    },
+    "P2": {
+      "outcome": "TN",
+      "detected": false,
+      "gt": false
+    },
+    "P3": {
+      "outcome": "TN",
+      "detected": false,
+      "gt": false
+    },
+    "P4": {
+      "outcome": "TN",
+      "detected": false,
+      "gt": false
+    },
+    "P5": {
+      "outcome": "TN",
+      "detected": false,
+      "gt": false
+    },
+    "P6": {
+      "outcome": "TN",
+      "detected": false,
+      "gt": false
+    }
+  },
+  "raw_report": {
+    "server_id": "/Users/zhuoran/Projects/mcp-attack-suite/sample_servers/email_hardened.py",
+    "timestamp": "2026-02-17T15:22:37.623437",
+    "static_analysis": {
+      "total_findings": 0,
+      "findings_by_severity": {
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0
+      },
+      "findings": []
+    },
+    "tool_mapping": {},
+    "scenario_compatibility": {},
+    "pitfall_summary": {}
+  }
+}

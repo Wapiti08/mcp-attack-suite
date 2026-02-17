@@ -1,0 +1,76 @@
+{
+  "tools": [
+    {
+      "name": "list_documents",
+      "description": "List available documents in the workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "name": "get_document",
+      "description": "Retrieve a document by ID. Only registered document IDs are accepted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "doc_id"
+        ]
+      }
+    },
+    {
+      "name": "convert_file",
+      "description": "Convert a document to the specified format and save to an approved output path.\n    Output path must be within the /workspace/output/ directory.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source_doc": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "default": "pdf"
+          }
+        },
+        "required": [
+          "source_doc",
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "submit_document",
+      "description": "Submit a document to an approved destination. Destination must be pre-approved.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "doc_id",
+          "destination"
+        ]
+      }
+    }
+  ],
+  "_source": "/Users/zhuoran/Projects/mcp-attack-suite/sample_servers/doc_hardened.py",
+  "_server_name": "doc_hardened"
+}

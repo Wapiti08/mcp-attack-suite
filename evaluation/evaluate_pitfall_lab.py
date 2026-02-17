@@ -194,23 +194,23 @@ class PitfallLabEvaluator:
         # P1: tool description as Policy
         findings.extend(self._detect_policy_in_descriptions(schema))
 
-        # P2: Overly permissive schemas
-        findings.extend(self._detect_permissive_schemas(schema))
-
-        # Load code for code-level checks
+        # Load code for code-level checks (needed for P2 filter + P5 + P6)
         if isinstance(server_code, Path):
-            if server_code.exists():
-                code_text = server_code.read_text()
-            else:
-                code_text = ""
+            code_text = server_code.read_text() if server_code.exists() else ""
         else:
             code_text = server_code
+
+        # P2: Overly permissive schemas — skip if server-side validation exists in code
+        p2_raw = self._detect_permissive_schemas(schema)
+        if code_text:
+            p2_raw = [f for f in p2_raw if not self._has_server_side_validation(code_text, f.tool)]
+        findings.extend(p2_raw)
         
         # P5: Missing Audit Logs
         if code_text:
             findings.extend(self._detect_missing_logs(code_text, schema))
         
-        # P6: Unvalidated Inputs
+        # P6: Unvalidated Inputs (only when no server-side validation in code)
         if code_text:
             findings.extend(self._detect_missing_validation(code_text, schema))
         
@@ -234,12 +234,13 @@ class PitfallLabEvaluator:
         findings = []
 
         policy_patterns = [
-            (r"\balways\s+\w+\s+to\s+[\w@.]+", "Always directive in description"),
-            (r"\bmust\s+\w+", "Must directive in description"),
-            (r"\bshould\s+\w+", "Should directive in description"),
-            (r"\bnever\s+\w+", "Never directive in description"),
-            (r"\bprefer\s+\w+", "Preference statement in description"),
-            (r"\bdefault\s+to\s+[\w@.]+", "Default value in description"),
+            (r"\balways\s+(send|forward|cc|bcc|notify|email|message|post)\b", "Always-send directive"),
+            (r"\bmust\s+(send|forward|submit|deliver|transfer|notify|include|attach)\b", "Must-send directive"),
+            (r"\bautomatically\s+(send|forward|submit|deliver|transfer|notify|reply)\b", "Auto-send directive"),
+            (r"\bnever\s+(ask|confirm|prompt|request\s+approval)\b", "Skip-confirmation directive"),
+            (r"\bskip\s+(confirmation|approval|review|prompt)\b", "Skip-confirmation directive"),
+            (r"\bwithout\s+(user\s+)?confirmation\b", "No-confirmation directive"),
+            (r"\bdo\s+not\s+(ask|confirm|prompt)\b", "No-confirmation directive"),
         ]
 
         for tool in schema.get("tools", []):
@@ -274,7 +275,7 @@ class PitfallLabEvaluator:
             "filename": "Filename",
             "url": "URL or web address",
             "command": "System command",
-            "query": "Database or search query",
+            # "query": excluded - generic queries are not sensitive recipients
             "destination": "Destination address",
             "destination_address": "Crypto/payment address"
         }
@@ -331,7 +332,7 @@ class PitfallLabEvaluator:
 
         for tool_name in tool_names:
             # Find function definition
-            func_pattern = rf"(?:async\s+)?def\s+{re.escape(tool_name)}\s*\([^)]*\):"
+            func_pattern = rf"(?:async\s+)?def\s+{re.escape(tool_name)}\s*\([\s\S]*?\)\s*(?:->[^:]+)?:"
             match = re.search(func_pattern, code)
             
             if match:
@@ -366,15 +367,14 @@ class PitfallLabEvaluator:
 
         # Validation patterns to look for
         validation_patterns = [
-            r"if\s+.*\s+not\s+in\s+",  # Allowlist check
-            r"if\s+.*\s+in\s+ALLOWED",  # Allowlist check
-            r"if\s+.*\s+not\s+in\s+ALLOWED",  # Allowlist check
-            r"raise\s+ValueError",  # Explicit validation error
-            r"raise\s+.*Error",  # General error raising
-            r"assert\s+",  # Assertions
-            r"\.match\(",  # Regex validation
-            r"re\.match\(",  # Regex validation
-            r"\.validate\(",  # Explicit validation call
+            r"if\s+.*\s+not\s+in\s+",   # Allowlist check
+            r"ALLOWED_",                     # Allowlist constant
+            r"_ALLOWLIST",                   # Allowlist constant
+            r"raise\s+ValueError",          # Explicit validation error
+            r"raise\s+\w+Error",           # General error raising
+            r"re\.match\(",               # Regex validation
+            r"re\.fullmatch\(",           # Regex validation
+            r"\.validate\(",              # Explicit validation call
         ]
 
         tool_names = [tool["name"] for tool in schema.get("tools", [])]
@@ -392,7 +392,7 @@ class PitfallLabEvaluator:
             properties = tool_schema.get("inputSchema", {}).get("properties", {})
             has_sensitive_params = any(
                 any(sensitive in param_name.lower() for sensitive in 
-                    ["recipient", "to", "address", "path", "file", "url", "command", "query"])
+                    ["recipient", "to", "channel", "destination", "transfer_to", "address", "path", "file", "url", "command"])
                 for param_name in properties.keys()
             )
 
@@ -400,7 +400,7 @@ class PitfallLabEvaluator:
                 continue
 
             # find function body
-            func_pattern = rf"(?:async\s+)?def\s+{re.escape(tool_name)}\s*\([^)]*\):"   
+            func_pattern = rf"(?:async\s+)?def\s+{re.escape(tool_name)}\s*\([\s\S]*?\)\s*(?:->[^:]+)?:"   
             match = re.search(func_pattern, code)
 
             if match:
@@ -425,6 +425,24 @@ class PitfallLabEvaluator:
         
         return findings
     
+    def _has_server_side_validation(self, code: str, tool_name: str | None) -> bool:
+        """Check if a tool has server-side validation (allowlist, ValueError, regex)."""
+        import re
+        if not tool_name:
+            return False
+        func_pattern = rf"(?:async\s+)?def\s+{re.escape(tool_name)}\s*\([\s\S]*?\)\s*(?:->[^:]+)?:"
+        match = re.search(func_pattern, code)
+        if not match:
+            return False
+        start = match.end()
+        next_def = re.search(r"\n(?:def|class|@)\s", code[start:])
+        body = code[start:start + next_def.start()] if next_def else code[start:]
+        validation_indicators = [
+            r"ALLOWED_", r"_ALLOWLIST", r"raise\s+ValueError",
+            r"if\s+\w+\s+not\s+in\s+", r"re\.match\(", r"\.validate\(",
+        ]
+        return any(re.search(p, body) for p in validation_indicators)
+
     def map_server_to_canonical(self, server_schema: dict) -> dict[str, str]:
         '''
         map server's tools to canonical tool semantics

@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-02-17T15:24:26.961494",
+  "num_runs": 3,
+  "models": [
+    {
+      "id": "claude-sonnet-4-20250514",
+      "name": "Claude Sonnet 4",
+      "tier": "flagship",
+      "provider": "anthropic",
+      "cost_per_mtok_input": 3.0,
+      "cost_per_mtok_output": 15.0,
+      "enabled": true,
+      "notes": "Latest flagship model from Anthropic"
+    },
+    {
+      "id": "claude-3-sonnet-20240229",
+      "name": "Claude 3 Sonnet",
+      "tier": "legacy",
+      "provider": "anthropic",
+      "cost_per_mtok_input": 3.0,
+      "cost_per_mtok_output": 15.0,
+      "enabled": true,
+      "notes": ""
+    },
+    {
+      "id": "gpt-3.5-turbo",
+      "name": "GPT-3.5 Turbo",
+      "tier": "legacy",
+      "provider": "openai",
+      "cost_per_mtok_input": 0.5,
+      "cost_per_mtok_output": 1.5,
+      "enabled": true,
+      "notes": "Legacy model for baseline and budget testing"
+    },
+    {
+      "id": "gemini-1.5-flash",
+      "name": "Gemini 1.5 Flash",
+      "tier": "fast",
+      "provider": "google",
+      "cost_per_mtok_input": 0.075,
+      "cost_per_mtok_output": 0.3,
+      "enabled": true,
+      "notes": "Fast and efficient Gemini variant"
+    },
+    {
+      "id": "qwen-turbo",
+      "name": "Qwen Turbo",
+      "tier": "fast",
+      "provider": "alibaba",
+      "cost_per_mtok_input": 0.04,
+      "cost_per_mtok_output": 0.12,
+      "enabled": true,
+      "notes": "Fast and affordable Qwen variant"
+    }
+  ],
+  "challenges": [
+    "emailsystem",
+    "documentsystem",
+    "ETHPriceServer"
+  ],
+  "attack_types": [
+    "tool_poisoning",
+    "multimodal_attack",
+    "puppet"
+  ],
+  "total_tasks": 15,
+  "successful_tasks": 15
+}

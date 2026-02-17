@@ -1,0 +1,156 @@
+
+
+                                                 ╭──────────────────────────────────────────────────────────────────────────────╮                                                  
+                                                 │                                                                              │                                                  
+                                                 │                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │                                                  
+                                                 │                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │                                                  
+                                                 │                                                                              │                                                  
+                                                 │                                FastMCP 2.14.0                                │                                                  
+                                                 │                                                                              │                                                  
+                                                 │                                                                              │                                                  
+                                                 │                  🖥  Server name: ImageExtractorServer                        │                                                  
+                                                 │                                                                              │                                                  
+                                                 │                  📦 Transport:   HTTP                                        │                                                  
+                                                 │                  🔗 Server URL:  http://127.0.0.1:20871/mcp                  │                                                  
+                                                 │                                                                              │                                                  
+                                                 │                  📚 Docs:        https://gofastmcp.com                       │                                                  
+                                                 │                  🚀 Hosting:     https://fastmcp.cloud                       │                                                  
+                                                 │                                                                              │                                                  
+                                                 ╰──────────────────────────────────────────────────────────────────────────────╯                                                  
+
+
+[02/16/26 10:33:46] INFO     Starting MCP server 'ImageExtractorServer' with transport 'http' on http://127.0.0.1:20871/mcp                                          server.py:2582
+INFO:     Started server process [61569]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:20871 (Press CTRL+C to quit)
+[02/16/26 10:33:50] Error calling tool 'extract_image_content'                                                                                                                     
+                    ╭───────────────────────────────────────────────────────────── Traceback (most recent call last) ─────────────────────────────────────────────────────────────╮
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py:101 in map_httpcore_exceptions                    │
+                    │                                                                                                                                                             │
+                    │    98 │   if len(HTTPCORE_EXC_MAP) == 0:                                                                                                                    │
+                    │    99 │   │   HTTPCORE_EXC_MAP = _load_httpcore_exceptions()                                                                                                │
+                    │   100 │   try:                                                                                                                                              │
+                    │ ❱ 101 │   │   yield                                                                                                                                         │
+                    │   102 │   except Exception as exc:                                                                                                                          │
+                    │   103 │   │   mapped_exc = None                                                                                                                             │
+                    │   104                                                                                                                                                       │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py:250 in handle_request                             │
+                    │                                                                                                                                                             │
+                    │   247 │   │   │   extensions=request.extensions,                                                                                                            │
+                    │   248 │   │   )                                                                                                                                             │
+                    │   249 │   │   with map_httpcore_exceptions():                                                                                                               │
+                    │ ❱ 250 │   │   │   resp = self._pool.handle_request(req)                                                                                                     │
+                    │   251 │   │                                                                                                                                                 │
+                    │   252 │   │   assert isinstance(resp.stream, typing.Iterable)                                                                                               │
+                    │   253                                                                                                                                                       │
+                    │                                                                                                                                                             │
+                    │                                                                   ... 6 frames hidden ...                                                                   │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py:153 in __exit__                                                                         │
+                    │                                                                                                                                                             │
+                    │   150 │   │   │   │   # tell if we get the same exception back                                                                                              │
+                    │   151 │   │   │   │   value = typ()                                                                                                                         │
+                    │   152 │   │   │   try:                                                                                                                                      │
+                    │ ❱ 153 │   │   │   │   self.gen.throw(typ, value, traceback)                                                                                                 │
+                    │   154 │   │   │   except StopIteration as exc:                                                                                                              │
+                    │   155 │   │   │   │   # Suppress StopIteration *unless* it's the same exception that                                                                        │
+                    │   156 │   │   │   │   # was passed to throw().  This prevents a StopIteration                                                                               │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpcore/_exceptions.py:14 in map_exceptions                                   │
+                    │                                                                                                                                                             │
+                    │   11 │   except Exception as exc:  # noqa: PIE786                                                                                                           │
+                    │   12 │   │   for from_exc, to_exc in map.items():                                                                                                           │
+                    │   13 │   │   │   if isinstance(exc, from_exc):                                                                                                              │
+                    │ ❱ 14 │   │   │   │   raise to_exc(exc) from exc                                                                                                             │
+                    │   15 │   │   raise  # pragma: nocover                                                                                                                       │
+                    │   16                                                                                                                                                        │
+                    │   17                                                                                                                                                        │
+                    ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    ConnectError: [Errno 61] Connection refused                                                                                                                    
+                                                                                                                                                                                   
+                    The above exception was the direct cause of the following exception:                                                                                           
+                                                                                                                                                                                   
+                    ╭───────────────────────────────────────────────────────────── Traceback (most recent call last) ─────────────────────────────────────────────────────────────╮
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/openai/_base_client.py:982 in request                                          │
+                    │                                                                                                                                                             │
+                    │    979 │   │   │                                                                                                                                            │
+                    │    980 │   │   │   response = None                                                                                                                          │
+                    │    981 │   │   │   try:                                                                                                                                     │
+                    │ ❱  982 │   │   │   │   response = self._client.send(                                                                                                        │
+                    │    983 │   │   │   │   │   request,                                                                                                                         │
+                    │    984 │   │   │   │   │   stream=stream or self._should_stream_response_body(request=request),                                                             │
+                    │    985 │   │   │   │   │   **kwargs,                                                                                                                        │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_client.py:914 in send                                                   │
+                    │                                                                                                                                                             │
+                    │    911 │   │                                                                                                                                                │
+                    │    912 │   │   auth = self._build_request_auth(request, auth)                                                                                               │
+                    │    913 │   │                                                                                                                                                │
+                    │ ❱  914 │   │   response = self._send_handling_auth(                                                                                                         │
+                    │    915 │   │   │   request,                                                                                                                                 │
+                    │    916 │   │   │   auth=auth,                                                                                                                               │
+                    │    917 │   │   │   follow_redirects=follow_redirects,                                                                                                       │
+                    │                                                                                                                                                             │
+                    │                                                                   ... 4 frames hidden ...                                                                   │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py:153 in __exit__                                                                         │
+                    │                                                                                                                                                             │
+                    │   150 │   │   │   │   # tell if we get the same exception back                                                                                              │
+                    │   151 │   │   │   │   value = typ()                                                                                                                         │
+                    │   152 │   │   │   try:                                                                                                                                      │
+                    │ ❱ 153 │   │   │   │   self.gen.throw(typ, value, traceback)                                                                                                 │
+                    │   154 │   │   │   except StopIteration as exc:                                                                                                              │
+                    │   155 │   │   │   │   # Suppress StopIteration *unless* it's the same exception that                                                                        │
+                    │   156 │   │   │   │   # was passed to throw().  This prevents a StopIteration                                                                               │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/httpx/_transports/default.py:118 in map_httpcore_exceptions                    │
+                    │                                                                                                                                                             │
+                    │   115 │   │   │   raise                                                                                                                                     │
+                    │   116 │   │                                                                                                                                                 │
+                    │   117 │   │   message = str(exc)                                                                                                                            │
+                    │ ❱ 118 │   │   raise mapped_exc(message) from exc                                                                                                            │
+                    │   119                                                                                                                                                       │
+                    │   120                                                                                                                                                       │
+                    │   121 class ResponseStream(SyncByteStream):                                                                                                                 │
+                    ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    ConnectError: [Errno 61] Connection refused                                                                                                                    
+                                                                                                                                                                                   
+                    The above exception was the direct cause of the following exception:                                                                                           
+                                                                                                                                                                                   
+                    ╭───────────────────────────────────────────────────────────── Traceback (most recent call last) ─────────────────────────────────────────────────────────────╮
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/fastmcp/tools/tool_manager.py:160 in call_tool                                 │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/fastmcp/tools/tool.py:383 in run                                               │
+                    │                                                                                                                                                             │
+                    │                                                                   ... 4 frames hidden ...                                                                   │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/openai/_base_client.py:1259 in post                                            │
+                    │                                                                                                                                                             │
+                    │   1256 │   │   opts = FinalRequestOptions.construct(                                                                                                        │
+                    │   1257 │   │   │   method="post", url=path, json_data=body, files=to_httpx_files(files),                                                                    │
+                    │        **options                                                                                                                                            │
+                    │   1258 │   │   )                                                                                                                                            │
+                    │ ❱ 1259 │   │   return cast(ResponseT, self.request(cast_to, opts, stream=stream,                                                                            │
+                    │        stream_cls=stream_cls))                                                                                                                              │
+                    │   1260 │                                                                                                                                                    │
+                    │   1261 │   def patch(                                                                                                                                       │
+                    │   1262 │   │   self,                                                                                                                                        │
+                    │                                                                                                                                                             │
+                    │ /Users/zhuoran/.pyenv/versions/mcp-attack-suite/lib/python3.10/site-packages/openai/_base_client.py:1014 in request                                         │
+                    │                                                                                                                                                             │
+                    │   1011 │   │   │   │   │   continue                                                                                                                         │
+                    │   1012 │   │   │   │                                                                                                                                        │
+                    │   1013 │   │   │   │   log.debug("Raising connection error")                                                                                                │
+                    │ ❱ 1014 │   │   │   │   raise APIConnectionError(request=request) from err                                                                                   │
+                    │   1015 │   │   │                                                                                                                                            │
+                    │   1016 │   │   │   log.debug(                                                                                                                               │
+                    │   1017 │   │   │   │   'HTTP Response: %s %s "%i %s" %s',                                                                                                   │
+                    ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    APIConnectionError: Connection error.                                                                                                                          
+INFO:     Shutting down
+ERROR:    Cancel 0 running task(s), timeout graceful shutdown exceeded
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [61569]

@@ -1,0 +1,6 @@
+Model,Tier,emailsystem,documentsystem,ETHPriceServer,Average,Total Attempts,Total Successful
+Claude Sonnet 4,flagship,0.0000,0.0000,0.0000,0.0000,0,0
+Claude 3 Sonnet,legacy,0.0000,0.0000,0.0000,0.0000,0,0
+GPT-3.5 Turbo,legacy,0.0000,0.0000,0.0000,0.0000,0,0
+Gemini 1.5 Flash,fast,0.0000,0.0000,0.0000,0.0000,0,0
+Qwen Turbo,fast,0.0000,0.0000,0.0000,0.0000,0,0

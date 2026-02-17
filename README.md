@@ -118,9 +118,52 @@ python evaluation/multi_model_evaluator.py \
 - Pitfall Lab Evaluation
 ```
 # under evaluation
-python3 divergence_analyzer.py
+## for once / single run
+python3 evaluation/divergence_analyzer.py trace.jsonl report.json
+## for batch runs
+python evaluation/divergence_analyzer.py environment/runs/
+
 python3 mitigation_evaluator.py
 
-# for static analysis, go to root folder
-python3 evaluation/static_analyzer.py sample_servers/crypto_hardened.py evaluation/ground_truth.json
+# ======= for static analysis, go to root folder ========
+## Step1: generate schema
+python evaluation/extract_schema.py --all-sample-servers
+
+## Step2: pitfall evaluation
+
+python evaluation/evaluate_pitfall_lab.py \
+  --server-code sample_servers/email_baseline.py \
+  --server-schema results/pitfall_lab/user_servers/email_baseline_schema.json \
+  --static-only \
+  --output results/pitfall_lab/user_servers/email_baseline_v1.json
+
+python evaluation/evaluate_pitfall_lab.py \
+  --server-code sample_servers/email_hardened.py \
+  --server-schema results/pitfall_lab/user_servers/email_hardened_schema.json \
+  --static-only \
+  --output results/pitfall_lab/user_servers/email_hardened_v1.json
+
+python evaluation/evaluate_pitfall_lab.py \
+  --server-code sample_servers/doc_baseline.py \
+  --server-schema results/pitfall_lab/user_servers/doc_baseline_schema.json \
+  --static-only \
+  --output results/pitfall_lab/user_servers/doc_baseline_v1.json
+
+  python evaluation/evaluate_pitfall_lab.py \
+  --server-code sample_servers/doc_hardened.py \
+  --server-schema results/pitfall_lab/user_servers/doc_hardened_schema.json \
+  --static-only \
+  --output results/pitfall_lab/user_servers/doc_hardened_v1.json
+
+  python evaluation/evaluate_pitfall_lab.py \
+  --server-code sample_servers/crypto_baseline.py \
+  --server-schema results/pitfall_lab/user_servers/crypto_baseline_schema.json \
+  --static-only \
+  --output results/pitfall_lab/user_servers/crypto_baseline_v1.json
+
+  python evaluation/evaluate_pitfall_lab.py \
+  --server-code sample_servers/crypto_hardened.py \
+  --server-schema results/pitfall_lab/user_servers/crypto_hardened_schema.json \
+  --static-only \
+  --output results/pitfall_lab/user_servers/crypto_hardened_v1.json
 ```

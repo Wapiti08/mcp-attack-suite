@@ -111,7 +111,7 @@ class SourceBenchmarkEvaluator:
                 "--challenge", self.challenge,
                 "--attack", attack_type,
                 "--submission", str(submission),
-                "--model", self.model,
+                # "--model", self.model,
                 "--output-dir", str(output_dir)  # Let runner write files here
             ]
             
@@ -636,11 +636,11 @@ Examples:
         help="Attack types to evaluate (default: all three)"
     )
     
-    parser.add_argument(
-        "--model",
-        default="claude-sonnet-4-20250514",
-        help="Model to use for evaluation"
-    )
+    # parser.add_argument(
+    #     "--model",
+    #     default="claude-sonnet-4-20250514",
+    #     help="Model to use for evaluation"
+    # )
     
     parser.add_argument(
         "--num-runs",
@@ -666,7 +666,7 @@ Examples:
     evaluator = SourceBenchmarkEvaluator(
         challenge=args.challenge,
         submissions_dir=args.submissions_dir,
-        model=args.model,
+        # model=args.model,
         num_runs=args.num_runs
     )
     
@@ -676,7 +676,7 @@ Examples:
     print(f"{'='*70}")
     print(f"Challenge: {args.challenge}")
     print(f"Submissions: {args.submissions_dir}")
-    print(f"Model: {args.model}")
+    # print(f"Model: {args.model}")
     print(f"Runs per submission: {args.num_runs}")
     print(f"{'='*70}\n")
     

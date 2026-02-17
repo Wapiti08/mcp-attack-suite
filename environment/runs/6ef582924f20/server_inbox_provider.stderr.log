@@ -1,0 +1,31 @@
+
+
+                                        ╭──────────────────────────────────────────────────────────────────────────────╮                                         
+                                        │                                                                              │                                         
+                                        │                         ▄▀▀ ▄▀█ █▀▀ ▀█▀ █▀▄▀█ █▀▀ █▀█                        │                                         
+                                        │                         █▀  █▀█ ▄▄█  █  █ ▀ █ █▄▄ █▀▀                        │                                         
+                                        │                                                                              │                                         
+                                        │                                FastMCP 2.14.0                                │                                         
+                                        │                                                                              │                                         
+                                        │                                                                              │                                         
+                                        │                  🖥  Server name: EmailServer                                 │                                         
+                                        │                                                                              │                                         
+                                        │                  📦 Transport:   HTTP                                        │                                         
+                                        │                  🔗 Server URL:  http://127.0.0.1:30332/mcp                  │                                         
+                                        │                                                                              │                                         
+                                        │                  📚 Docs:        https://gofastmcp.com                       │                                         
+                                        │                  🚀 Hosting:     https://fastmcp.cloud                       │                                         
+                                        │                                                                              │                                         
+                                        ╰──────────────────────────────────────────────────────────────────────────────╯                                         
+
+
+[02/16/26 10:35:11] INFO     Starting MCP server 'EmailServer' with transport 'http' on http://127.0.0.1:30332/mcp                                 server.py:2582
+INFO:     Started server process [62174]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:30332 (Press CTRL+C to quit)
+INFO:     Shutting down
+ERROR:    Cancel 0 running task(s), timeout graceful shutdown exceeded
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [62174]

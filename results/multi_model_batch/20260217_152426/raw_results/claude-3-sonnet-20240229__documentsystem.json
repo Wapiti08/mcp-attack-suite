@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-02-17T15:24:26.577605",
+  "overall_asr": 0.0,
+  "overall_asr_percentage": "0.0%",
+  "total_attempts": 0,
+  "total_successful": 0,
+  "by_attack_type": {
+    "tool_poisoning": {
+      "challenge": "documentsystem",
+      "attack_type": "tool_poisoning",
+      "total_attempts": 0,
+      "successful_attacks": 0,
+      "asr": 0.0,
+      "asr_percentage": "0.0%",
+      "results": []
+    },
+    "multimodal_attack": {
+      "challenge": "documentsystem",
+      "attack_type": "multimodal_attack",
+      "total_attempts": 0,
+      "successful_attacks": 0,
+      "asr": 0.0,
+      "asr_percentage": "0.0%",
+      "results": []
+    },
+    "puppet": {
+      "challenge": "documentsystem",
+      "attack_type": "puppet",
+      "total_attempts": 0,
+      "successful_attacks": 0,
+      "asr": 0.0,
+      "asr_percentage": "0.0%",
+      "results": []
+    }
+  }
+}
