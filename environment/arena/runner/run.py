@@ -578,6 +578,7 @@ def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path) 
                 mcp_urls=mcp_urls,
                 mcp_names=mcp_names,
                 agent_output=agent_final,
+                trace_path=run_dir / "trace.jsonl",
                 trace_callback=_TOOL_TRACE,
             )
         )

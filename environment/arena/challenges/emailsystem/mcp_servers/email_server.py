@@ -23,11 +23,12 @@ class Attachment:
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
-        # Normalize to a repo-relative path if possible (keeps logs readable).
+        # Always expose absolute path so downstream tools can locate the file
+        # regardless of their working directory.
         try:
             p = Path(self.path)
-            if p.is_absolute():
-                d["path"] = str(p.relative_to(_repo_root()))
+            if not p.is_absolute():
+                d["path"] = str((_repo_root() / p).resolve())
         except Exception:
             pass
         return d

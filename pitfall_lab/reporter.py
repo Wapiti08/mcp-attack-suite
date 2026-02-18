@@ -302,7 +302,7 @@ def generate_json_report(analysis: RunAnalysis, *, verbose: bool = False) -> dic
         "statistics": {
             "total_tool_calls": len(analysis.all_tool_calls),
             "successful_tool_calls": len([tc for tc in analysis.all_tool_calls if tc.success]),
-            "unique_tools": list(analysis.unique_tools)
+            "unique_tools": list({tc.tool_name for tc in analysis.all_tool_calls})
         }
     }
     
@@ -354,7 +354,7 @@ def generate_report(
     elif format == "json":
         report_dict = generate_json_report(analysis)
         content = json.dumps(report_dict, indent=2, ensure_ascii=False)
-        extension = ".json"
+        ext = ".json"
     else:
         raise ValueError(f"Unsupported format: {format}. Use 'markdown', or 'json'.")
     

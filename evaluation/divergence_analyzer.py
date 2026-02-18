@@ -338,7 +338,7 @@ def _pick_report_file(d: Path) -> Path | None:
     if p.exists():
         return p
 
-    # # 2) injected_*.json
+    # 2) injected_*.json
     # injected = sorted(d.glob("injected_*.json"))
     # if len(injected) == 1:
     #     return injected[0]
