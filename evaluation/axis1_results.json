@@ -1,0 +1,283 @@
+{
+  "axis": 1,
+  "description": "Static analysis via evaluate_pitfall_lab.py + ground_truth.json",
+  "mean_time_ms": 3.0,
+  "per_server": {
+    "crypto_baseline": {
+      "P1": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P2": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P3": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P4": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P5": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P6": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      }
+    },
+    "crypto_hardened": {
+      "P1": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P2": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P3": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P4": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P5": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P6": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      }
+    },
+    "doc_baseline": {
+      "P1": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P2": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P3": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P4": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P5": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P6": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      }
+    },
+    "doc_hardened": {
+      "P1": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P2": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P3": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P4": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P5": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P6": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      }
+    },
+    "email_baseline": {
+      "P1": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P2": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P3": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P4": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P5": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      },
+      "P6": {
+        "outcome": "TP",
+        "detected": true,
+        "gt": true
+      }
+    },
+    "email_hardened": {
+      "P1": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P2": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P3": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P4": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P5": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      },
+      "P6": {
+        "outcome": "TN",
+        "detected": false,
+        "gt": false
+      }
+    }
+  },
+  "active_classes": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6"
+  ],
+  "per_class": {
+    "P1": {
+      "TP": 3,
+      "FP": 0,
+      "FN": 0,
+      "TN": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "active": true,
+      "note": ""
+    },
+    "P2": {
+      "TP": 3,
+      "FP": 0,
+      "FN": 0,
+      "TN": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "active": true,
+      "note": ""
+    },
+    "P3": {
+      "TP": 2,
+      "FP": 0,
+      "FN": 0,
+      "TN": 4,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "active": true,
+      "note": ""
+    },
+    "P4": {
+      "TP": 2,
+      "FP": 0,
+      "FN": 0,
+      "TN": 4,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "active": true,
+      "note": ""
+    },
+    "P5": {
+      "TP": 3,
+      "FP": 0,
+      "FN": 0,
+      "TN": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "active": true,
+      "note": ""
+    },
+    "P6": {
+      "TP": 3,
+      "FP": 0,
+      "FN": 0,
+      "TN": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "active": true,
+      "note": ""
+    }
+  },
+  "aggregate": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "TP": 16,
+    "FP": 0,
+    "FN": 0
+  }
+}

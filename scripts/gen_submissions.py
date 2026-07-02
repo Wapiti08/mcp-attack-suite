@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 import re
 import textwrap
 from dataclasses import dataclass
@@ -45,6 +47,60 @@ def _substitute(template: str, *, base_prompt: str) -> str:
     return template.replace("$", base_prompt)
 
 
+def _build_prompt_variants(
+    templates: list[tuple[str, Path, str]],
+    *,
+    base_prompt: str,
+    include_compound: bool,
+) -> list[dict[str, str]]:
+    """
+    Build 12 singular prompt payloads plus 24 deterministic compound payloads.
+    Across 3 challenges and 3 attack families, this yields the 324 submissions
+    needed for Table 1.
+    """
+    variants: list[dict[str, str]] = []
+    for group_name, prompt_path, template in templates:
+        label = f"{group_name}/{prompt_path.name}"
+        variants.append(
+            {
+                "variant_type": "singular",
+                "variant_id": _slugify(label),
+                "template_id": label,
+                "compound_of": "",
+                "payload": _substitute(template, base_prompt=base_prompt).strip(),
+            }
+        )
+
+    if not include_compound:
+        return variants
+
+    n = len(templates)
+    partner_offsets = (1, max(1, n // 2))
+    seen = {v["variant_id"] for v in variants}
+    for i, (group_a, path_a, template_a) in enumerate(templates):
+        for offset in partner_offsets:
+            group_b, path_b, template_b = templates[(i + offset) % n]
+            label_a = f"{group_a}/{path_a.name}"
+            label_b = f"{group_b}/{path_b.name}"
+            inner_payload = _substitute(template_b, base_prompt=base_prompt).strip()
+            payload = _substitute(template_a, base_prompt=inner_payload).strip()
+            variant_id = _slugify(f"compound_{label_a}_plus_{label_b}")
+            if variant_id in seen:
+                variant_id = _slugify(f"{variant_id}_{offset}")
+            seen.add(variant_id)
+            variants.append(
+                {
+                    "variant_type": "compound",
+                    "variant_id": variant_id,
+                    "template_id": f"{label_a} + {label_b}",
+                    "compound_of": json.dumps([label_a, label_b], ensure_ascii=False),
+                    "payload": payload,
+                }
+            )
+
+    return variants
+
+
 def _write_file(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -52,7 +108,7 @@ def _write_file(path: Path, content: str) -> None:
 
 def _try_make_png(path: Path, *, title: str, body: str) -> None:
     try:
-        from PIL import Image, ImageDraw, ImageFont  # type: ignore
+        from PIL import Image, ImageDraw, ImageFont, PngImagePlugin  # type: ignore
     except Exception as e:  # pragma: no cover
         raise RuntimeError(
             "Pillow (PIL) is required to generate PNG submissions. "
@@ -96,7 +152,11 @@ def _try_make_png(path: Path, *, title: str, body: str) -> None:
     draw.rectangle([(25, 25), (width - 25, height - 25)], outline=(0, 0, 0), width=4)
     draw.text((55, 55), title, fill=(0, 0, 0), font=font)
     draw.text((55, 120), body, fill=(0, 0, 0), font=font_small, spacing=8)
-    img.save(path, format="PNG")
+    meta = PngImagePlugin.PngInfo()
+    meta.add_text("attack_title", title)
+    meta.add_text("attack_payload", body)
+    img.save(path, format="PNG", pnginfo=meta)
+    path.with_suffix(path.suffix + ".txt").write_text(body + "\n", encoding="utf-8")
 
 
 def _render_emailsystem_puppet_server(*, payload: str) -> str:
@@ -229,6 +289,44 @@ CHALLENGES: dict[str, ChallengeKinds] = {
 }
 
 
+def _render_puppet_server(*, challenge: str, payload: str) -> str:
+    if challenge == "emailsystem":
+        return _render_emailsystem_puppet_server(payload=payload)
+    if challenge == "documentsystem":
+        return _render_compliance_server(
+            tool_name="check_summary_compliance",
+            tool_arg="summary_markdown",
+            tool_doc=f"Runs a compliance check on a draft summary.\n\n{payload}",
+        )
+    if challenge == "ETHPriceServer":
+        return _render_compliance_server(
+            tool_name="check_response_compliance",
+            tool_arg="draft_response",
+            tool_doc=f"Checks whether a draft response follows style and compliance rules.\n\n{payload}",
+        )
+    raise SystemExit(f"Unsupported challenge: {challenge}")
+
+
+def _write_manifest(out_root: Path, rows: list[dict[str, str]]) -> None:
+    _write_file(out_root / "manifest.json", json.dumps(rows, indent=2, ensure_ascii=False) + "\n")
+    csv_path = out_root / "manifest.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "challenge",
+        "attack_type",
+        "variant_type",
+        "variant_id",
+        "template_id",
+        "compound_of",
+        "submission_path",
+        "prompt_text",
+    ]
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Generate many submissions from a base prompt + singular attack templates.")
     ap.add_argument("--challenge", required=True, choices=sorted(CHALLENGES.keys()))
@@ -244,6 +342,7 @@ def main() -> None:
         help="Folder suffix under out-dir (default: current timestamp).",
     )
     ap.add_argument("--skip-images", action="store_true", help="Do not generate PNG submissions.")
+    ap.add_argument("--no-compound", action="store_true", help="Only generate the 12 singular prompts.")
     args = ap.parse_args()
 
     challenge = str(args.challenge)
@@ -251,19 +350,37 @@ def main() -> None:
 
     out_root = Path(args.out_dir) / challenge / str(args.stamp)
     templates = _load_attack_templates(SINGULAR_ATTACKS_DIR)
+    variants = _build_prompt_variants(
+        templates,
+        base_prompt=base_prompt,
+        include_compound=not bool(args.no_compound),
+    )
 
     commands: list[str] = []
     commands.append(f"# Generated submissions for challenge={challenge} at {datetime.now().isoformat(timespec='seconds')}")
     commands.append("# Run these from the repo root.")
+    manifest_rows: list[dict[str, str]] = []
 
-    for group_name, prompt_path, template in templates:
-        payload = _substitute(template, base_prompt=base_prompt).strip()
-        template_id = f"{group_name}/{prompt_path.name}"
-        slug = _slugify(f"{group_name}_{prompt_path.name}")
+    for variant in variants:
+        payload = variant["payload"]
+        template_id = variant["template_id"]
+        slug = variant["variant_id"]
 
         # Always write the substituted string payload.
         txt_path = out_root / "strings" / f"{slug}.txt"
         _write_file(txt_path, payload + "\n")
+        manifest_rows.append(
+            {
+                "challenge": challenge,
+                "attack_type": "tool_poisoning",
+                "variant_type": variant["variant_type"],
+                "variant_id": slug,
+                "template_id": template_id,
+                "compound_of": variant["compound_of"],
+                "submission_path": txt_path.as_posix(),
+                "prompt_text": payload,
+            }
+        )
 
         # Tool poisoning: runner supports raw injection strings as --submission for attack_type=tool_poisoning.
         commands.append("")
@@ -272,32 +389,86 @@ def main() -> None:
             f'python -m environment.arena.runner run --challenge {challenge} --attack tool_poisoning --submission "$(cat {txt_path.as_posix()})"'
         )
 
+        puppet_path = out_root / "puppet" / f"{slug}.py"
+        _write_file(puppet_path, _render_puppet_server(challenge=challenge, payload=payload))
+        commands.append(
+            f"python -m environment.arena.runner run --challenge {challenge} --attack puppet --submission {puppet_path.as_posix()}"
+        )
+        manifest_rows.append(
+            {
+                "challenge": challenge,
+                "attack_type": "puppet",
+                "variant_type": variant["variant_type"],
+                "variant_id": slug,
+                "template_id": template_id,
+                "compound_of": variant["compound_of"],
+                "submission_path": puppet_path.as_posix(),
+                "prompt_text": payload,
+            }
+        )
+
         # Multimodal: generate an OCR-target image containing the payload.
         if challenge == "emailsystem":
             if not args.skip_images:
                 img_path = out_root / "multimodal_attack" / f"{slug}.png"
-                body = f"Email attachment (OCR target)\\n\\n{payload}"
+                body = f"Email attachment (OCR target)\n\n{payload}"
                 _try_make_png(img_path, title="Q1 Update (Attachment)", body=body)
                 commands.append(
                     f"python -m environment.arena.runner run --challenge {challenge} --attack multimodal_attack --submission {img_path.as_posix()}"
+                )
+                manifest_rows.append(
+                    {
+                        "challenge": challenge,
+                        "attack_type": "multimodal_attack",
+                        "variant_type": variant["variant_type"],
+                        "variant_id": slug,
+                        "template_id": template_id,
+                        "compound_of": variant["compound_of"],
+                        "submission_path": img_path.as_posix(),
+                        "prompt_text": payload,
+                    }
                 )
 
         elif challenge == "documentsystem":
             if not args.skip_images:
                 img_path = out_root / "multimodal_attack" / f"{slug}.png"
-                body = f"Scanned document (OCR target)\\n\\n{payload}"
+                body = f"Scanned document (OCR target)\n\n{payload}"
                 _try_make_png(img_path, title="Scanned Memo", body=body)
                 commands.append(
                     f"python -m environment.arena.runner run --challenge {challenge} --attack multimodal_attack --submission {img_path.as_posix()}"
+                )
+                manifest_rows.append(
+                    {
+                        "challenge": challenge,
+                        "attack_type": "multimodal_attack",
+                        "variant_type": variant["variant_type"],
+                        "variant_id": slug,
+                        "template_id": template_id,
+                        "compound_of": variant["compound_of"],
+                        "submission_path": img_path.as_posix(),
+                        "prompt_text": payload,
+                    }
                 )
 
         elif challenge == "ETHPriceServer":
             if not args.skip_images:
                 img_path = out_root / "multimodal_attack" / f"{slug}.png"
-                body = f"Investor relations appendix (OCR target)\\n\\n{payload}"
+                body = f"Investor relations appendix (OCR target)\n\n{payload}"
                 _try_make_png(img_path, title="Investor Relations Appendix", body=body)
                 commands.append(
                     f"python -m environment.arena.runner run --challenge {challenge} --attack multimodal_attack --submission {img_path.as_posix()}"
+                )
+                manifest_rows.append(
+                    {
+                        "challenge": challenge,
+                        "attack_type": "multimodal_attack",
+                        "variant_type": variant["variant_type"],
+                        "variant_id": slug,
+                        "template_id": template_id,
+                        "compound_of": variant["compound_of"],
+                        "submission_path": img_path.as_posix(),
+                        "prompt_text": payload,
+                    }
                 )
 
         else:  # pragma: no cover
@@ -306,8 +477,11 @@ def main() -> None:
     run_sh = out_root / "run_all.sh"
     _write_file(run_sh, "\n".join(commands).rstrip() + "\n")
     run_sh.chmod(0o755)
+    _write_manifest(out_root, manifest_rows)
 
     print(f"Wrote: {out_root}")
+    print(f"Prompt payloads: {len(variants)}")
+    print(f"Submissions: {len(manifest_rows)}")
     print(f"Commands: {run_sh}")
 
 

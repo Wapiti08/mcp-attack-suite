@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import tempfile
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
@@ -76,12 +75,14 @@ class SourceBenchmarkEvaluator:
         challenge: str,
         submissions_dir: Path,
         model: str = "claude-sonnet-4-20250514",
-        num_runs: int = 3
+        num_runs: int = 3,
+        run_artifacts_dir: Path | None = None,
     ):
         self.challenge = challenge
         self.submissions_dir = submissions_dir
         self.model = model
         self.num_runs = num_runs
+        self.run_artifacts_dir = run_artifacts_dir
         self.results: list[AttackResult] = []
     
     def run_single_attack(
@@ -101,119 +102,134 @@ class SourceBenchmarkEvaluator:
         Returns:
             AttackResult with success determination
         """
-        # Create a temporary directory for this run's outputs
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            output_dir = Path(tmpdir)
-            
-            cmd = [
-                "python", "-m", "environment.arena.runner", "run",
-                "--challenge", self.challenge,
-                "--attack", attack_type,
-                "--submission", str(submission),
-                # "--model", self.model,
-                "--output-dir", str(output_dir)  # Let runner write files here
-            ]
-            
-            try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=120,
-                    check=False
-                )
+        output_dir = self._run_output_dir(attack_type=attack_type, submission=submission, run_number=run_number)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        submission_arg = self._submission_arg(attack_type, submission)
+        cmd = [
+            "python", "-m", "environment.arena.runner", "run",
+            "--challenge", self.challenge,
+            "--attack", attack_type,
+            "--submission", submission_arg,
+            "--model", self.model,
+            "--out", str(output_dir),
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False
+            )
                 
-                # Strategy 1: Check if runner created a report.json file
-                report_file = output_dir / "report.json"
-                trace = None
+            # Strategy 1: Check if runner created a report.json file under --out/<run_id>/.
+            report_files = sorted(
+                output_dir.glob("*/report.json"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            report_file = report_files[0] if report_files else output_dir / "report.json"
+            trace = None
                 
-                # First try: Check the specified output directory
-                if report_file.exists():
-                    try:
-                        with open(report_file, 'r') as f:
-                            trace = json.load(f)
-                    except Exception as e:
-                        trace = {
-                            "raw_output": result.stdout,
-                            "_parse_error": f"Failed to read report.json from output_dir: {e}"
-                        }
+            # First try: Check the specified output directory
+            if report_file.exists():
+                try:
+                    with open(report_file, 'r') as f:
+                        trace = json.load(f)
+                        trace["_report_source"] = str(report_file)
+                except Exception as e:
+                    trace = {
+                        "raw_output": result.stdout,
+                        "_parse_error": f"Failed to read report.json from output_dir: {e}"
+                    }
                 
-                # Second try: Check environment/runs directory for latest report.json
-                if trace is None or "run_id" not in trace:
-                    runs_dir = Path("environment/runs")
-                    if runs_dir.exists():
-                        # Find the most recently modified report.json
-                        report_files = sorted(
-                            runs_dir.glob("*/report.json"),
-                            key=lambda p: p.stat().st_mtime,
-                            reverse=True
-                        )
-                        if report_files:
-                            try:
-                                with open(report_files[0], 'r') as f:
-                                    trace = json.load(f)
-                                    trace["_report_source"] = str(report_files[0])
-                            except Exception as e:
-                                if trace is None:
-                                    trace = {
-                                        "raw_output": result.stdout,
-                                        "_parse_error": f"Failed to read report.json from runs dir: {e}",
-                                        "_attempted_file": str(report_files[0])
-                                    }
+            # Second try: Check environment/runs directory for latest report.json
+            if trace is None or "run_id" not in trace:
+                runs_dir = Path("environment/runs")
+                if runs_dir.exists():
+                    # Find the most recently modified report.json
+                    report_files = sorted(
+                        runs_dir.glob("*/report.json"),
+                        key=lambda p: p.stat().st_mtime,
+                        reverse=True
+                    )
+                    if report_files:
+                        try:
+                            with open(report_files[0], 'r') as f:
+                                trace = json.load(f)
+                                trace["_report_source"] = str(report_files[0])
+                        except Exception as e:
+                            if trace is None:
+                                trace = {
+                                    "raw_output": result.stdout,
+                                    "_parse_error": f"Failed to read report.json from runs dir: {e}",
+                                    "_attempted_file": str(report_files[0])
+                                }
                 
-                # Third try: Parse from stdout/stderr
-                if trace is None or "run_id" not in trace:
-                    combined_output = result.stdout + "\n" + result.stderr
-                    parsed_trace = self._parse_runner_output(combined_output)
+            # Third try: Parse from stdout/stderr
+            if trace is None or "run_id" not in trace:
+                combined_output = result.stdout + "\n" + result.stderr
+                parsed_trace = self._parse_runner_output(combined_output)
                     
-                    if "run_id" in parsed_trace:
+                if "run_id" in parsed_trace:
+                    trace = parsed_trace
+                else:
+                    # If parsing failed, add debug info
+                    if trace is None:
                         trace = parsed_trace
-                    else:
-                        # If parsing failed, add debug info
-                        if trace is None:
-                            trace = parsed_trace
-                        trace["_debug_stdout_len"] = len(result.stdout)
-                        trace["_debug_stderr_len"] = len(result.stderr)
-                        trace["_debug_returncode"] = result.returncode
-                        trace["_no_report_file"] = str(report_file)
+                    trace["_debug_stdout_len"] = len(result.stdout)
+                    trace["_debug_stderr_len"] = len(result.stderr)
+                    trace["_debug_returncode"] = result.returncode
+                    trace["_no_report_file"] = str(report_file)
                         
-                        # Save samples for debugging
-                        if result.stdout:
-                            trace["_stdout_sample"] = result.stdout[-1000:]  # Last 1000 chars
+                    # Save samples for debugging
+                    if result.stdout:
+                        trace["_stdout_sample"] = result.stdout[-1000:]  # Last 1000 chars
                 
-                # Determine if attack succeeded
-                success = self._check_attack_success(trace, attack_type)
+            # Determine if attack succeeded
+            success = self._check_attack_success(trace, attack_type)
                 
-                return AttackResult(
-                    challenge=self.challenge,
-                    attack_type=attack_type,
-                    submission_id=submission.name,
-                    success=success,
-                    trace=trace,
-                    run_number=run_number
-                )
+            return AttackResult(
+                challenge=self.challenge,
+                attack_type=attack_type,
+                submission_id=submission.name,
+                success=success,
+                trace=trace,
+                run_number=run_number
+            )
                 
-            except subprocess.TimeoutExpired:
-                return AttackResult(
-                    challenge=self.challenge,
-                    attack_type=attack_type,
-                    submission_id=submission.name,
-                    success=False,
-                    trace={},
-                    error="Execution timeout (120s)",
-                    run_number=run_number
-                )
-            except Exception as e:
-                return AttackResult(
-                    challenge=self.challenge,
-                    attack_type=attack_type,
-                    submission_id=submission.name,
-                    success=False,
-                    trace={},
-                    error=str(e),
-                    run_number=run_number
-                )
+        except subprocess.TimeoutExpired:
+            return AttackResult(
+                challenge=self.challenge,
+                attack_type=attack_type,
+                submission_id=submission.name,
+                success=False,
+                trace={},
+                error="Execution timeout (120s)",
+                run_number=run_number
+            )
+        except Exception as e:
+            return AttackResult(
+                challenge=self.challenge,
+                attack_type=attack_type,
+                submission_id=submission.name,
+                success=False,
+                trace={},
+                error=str(e),
+                run_number=run_number
+            )
+
+    def _run_output_dir(self, *, attack_type: str, submission: Path, run_number: int) -> Path:
+        root = self.run_artifacts_dir or Path("results/source_benchmark/run_artifacts")
+        safe_id = f"{attack_type}__{submission.stem}__run{run_number}"
+        return root / self.challenge / safe_id
+
+    def _submission_arg(self, attack_type: str, submission: Path) -> str:
+        if attack_type == "tool_poisoning" and submission.suffix.lower() == ".txt":
+            return submission.read_text(encoding="utf-8").strip()
+        return str(submission)
     
     def _parse_runner_output(self, stdout: str) -> dict:
         """
@@ -636,11 +652,11 @@ Examples:
         help="Attack types to evaluate (default: all three)"
     )
     
-    # parser.add_argument(
-    #     "--model",
-    #     default="claude-sonnet-4-20250514",
-    #     help="Model to use for evaluation"
-    # )
+    parser.add_argument(
+        "--model",
+        default="claude-sonnet-4-20250514",
+        help="Model to use for evaluation"
+    )
     
     parser.add_argument(
         "--num-runs",
@@ -654,6 +670,12 @@ Examples:
         type=Path,
         help="Output file for results (default: source_asr_<challenge>_<timestamp>.json)"
     )
+
+    parser.add_argument(
+        "--runs-dir",
+        type=Path,
+        help="Directory for preserving runner trace/report artifacts (default: <output_stem>_runs)"
+    )
     
     args = parser.parse_args()
     
@@ -662,12 +684,23 @@ Examples:
         print(f"Error: Submissions directory not found: {args.submissions_dir}")
         return 1
     
+    if args.output:
+        output_path = args.output
+    else:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = Path(f"source_asr_{args.challenge}_{timestamp}.json")
+
+    run_artifacts_dir = args.runs_dir or output_path.with_suffix("")
+    if run_artifacts_dir.name == output_path.stem:
+        run_artifacts_dir = run_artifacts_dir.parent / f"{run_artifacts_dir.name}_runs"
+
     # Create evaluator
     evaluator = SourceBenchmarkEvaluator(
         challenge=args.challenge,
         submissions_dir=args.submissions_dir,
-        # model=args.model,
-        num_runs=args.num_runs
+        model=args.model,
+        num_runs=args.num_runs,
+        run_artifacts_dir=run_artifacts_dir,
     )
     
     # Run evaluation
@@ -676,8 +709,9 @@ Examples:
     print(f"{'='*70}")
     print(f"Challenge: {args.challenge}")
     print(f"Submissions: {args.submissions_dir}")
-    # print(f"Model: {args.model}")
+    print(f"Model: {args.model}")
     print(f"Runs per submission: {args.num_runs}")
+    print(f"Run artifacts: {run_artifacts_dir}")
     print(f"{'='*70}\n")
     
     reports = evaluator.evaluate_all(args.attack_types)
@@ -695,12 +729,7 @@ Examples:
     print(f"{'='*70}\n")
     
     # Save results
-    if args.output:
-        output_path = args.output
-    else:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = Path(f"source_asr_{args.challenge}_{timestamp}.json")
-    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(summary, f, indent=2)
     

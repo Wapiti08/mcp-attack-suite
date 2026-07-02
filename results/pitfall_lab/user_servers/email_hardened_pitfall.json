@@ -36,7 +36,7 @@
   },
   "raw_report": {
     "server_id": "/Users/zhuoran/Projects/mcp-attack-suite/sample_servers/email_hardened.py",
-    "timestamp": "2026-02-17T15:22:37.623437",
+    "timestamp": "2026-07-02T20:55:03.481446",
     "static_analysis": {
       "total_findings": 0,
       "findings_by_severity": {

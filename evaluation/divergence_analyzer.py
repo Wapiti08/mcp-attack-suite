@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import re
+import csv
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -378,6 +379,8 @@ def analyze_runs(run_dir: str) -> dict:
     with_divergence = 0
     per_type: dict[str, int] = {f"D{i}": 0 for i in range(1, 6)}
     per_family: dict[str, int] = {}
+    per_family_runs: dict[str, int] = {}
+    per_family_sink_runs: dict[str, int] = {}
     per_challenge: dict[str, int] = {}
 
     # Support both: run_dir containing trace+report directly,
@@ -390,7 +393,7 @@ def analyze_runs(run_dir: str) -> dict:
     if trace_direct.exists() and report_direct.exists():
         candidates.append((trace_direct, report_direct))
 
-    # Subdirectories
+    # Subdirectories (one level)
     for sub in sorted(run_dir_path.iterdir()):
         if not sub.is_dir():
             continue
@@ -398,6 +401,18 @@ def analyze_runs(run_dir: str) -> dict:
         r = _pick_report_file(sub)
         if t.exists() and r is not None:
            candidates.append((t, r))
+
+    # Recursive fallback for evaluator artifact dirs:
+    # <runs_root>/<challenge>/<submission_id>/<run_id>/{trace.jsonl,report.json}
+    seen = {(t.resolve(), r.resolve()) for t, r in candidates}
+    for t in sorted(run_dir_path.rglob("trace.jsonl")):
+        r = _pick_report_file(t.parent)
+        if r is None:
+            continue
+        key = (t.resolve(), r.resolve())
+        if key not in seen:
+            candidates.append((t, r))
+            seen.add(key)
 
     if not candidates:
         raise FileNotFoundError(
@@ -407,8 +422,10 @@ def analyze_runs(run_dir: str) -> dict:
     for trace_p, report_p in candidates:
         record = parse_run(str(trace_p), str(report_p))
         total += 1
+        per_family_runs[record.attack_family] = per_family_runs.get(record.attack_family, 0) + 1
         if record.sink_calls:
             with_sink += 1
+            per_family_sink_runs[record.attack_family] = per_family_sink_runs.get(record.attack_family, 0) + 1
         divs = detect_divergences(record)
         if divs:
             with_divergence += 1
@@ -419,6 +436,11 @@ def analyze_runs(run_dir: str) -> dict:
         all_divs.extend(divs)
 
     high = sum(1 for d in all_divs if d.severity == "HIGH")
+    table6 = _build_table6_rows(
+        all_divs=all_divs,
+        per_family_runs=per_family_runs,
+        per_family_sink_runs=per_family_sink_runs,
+    )
 
     return {
         "total_runs":             total,
@@ -428,8 +450,11 @@ def analyze_runs(run_dir: str) -> dict:
         "sink_run_divergence_rate": round(with_divergence / with_sink, 3) if with_sink else 0,
         "per_type_counts":        per_type,
         "per_attack_divergence":  per_family,
+        "per_attack_runs":        per_family_runs,
+        "per_attack_sink_runs":   per_family_sink_runs,
         "per_challenge_divergence": per_challenge,
         "high_severity_divergences": high,
+        "table6": table6,
         "instances": [
             {
                 "run_id":         d.run_id,
@@ -447,13 +472,93 @@ def analyze_runs(run_dir: str) -> dict:
     }
 
 
+def _build_table6_rows(
+    *,
+    all_divs: list[Divergence],
+    per_family_runs: dict[str, int],
+    per_family_sink_runs: dict[str, int],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    by_family_type: dict[str, dict[str, int]] = {}
+    by_family_high: dict[str, int] = {}
+    by_family_run_ids: dict[str, set[str]] = {}
+
+    for d in all_divs:
+        fam = d.attack_family
+        by_family_type.setdefault(fam, {f"D{i}": 0 for i in range(1, 6)})
+        by_family_type[fam][d.dtype] = by_family_type[fam].get(d.dtype, 0) + 1
+        by_family_run_ids.setdefault(fam, set()).add(d.run_id)
+        if d.severity == "HIGH":
+            by_family_high[fam] = by_family_high.get(fam, 0) + 1
+
+    for family in sorted(per_family_runs):
+        counts = by_family_type.get(family, {f"D{i}": 0 for i in range(1, 6)})
+        total_divergences = sum(counts.values())
+        total_runs = per_family_runs.get(family, 0)
+        sink_runs = per_family_sink_runs.get(family, 0)
+        divergent_runs = len(by_family_run_ids.get(family, set()))
+        row: dict[str, Any] = {
+            "attack_family": family,
+            "runs": total_runs,
+            "sink_runs": sink_runs,
+            "runs_with_divergence": divergent_runs,
+            "runs_with_divergence_rate": round(divergent_runs / total_runs, 3) if total_runs else 0,
+            "sink_run_divergence_rate": round(divergent_runs / sink_runs, 3) if sink_runs else 0,
+            "high_severity": by_family_high.get(family, 0),
+            "total_divergences": total_divergences,
+        }
+        for dtype in [f"D{i}" for i in range(1, 6)]:
+            row[dtype] = counts.get(dtype, 0)
+        rows.append(row)
+    return rows
+
+
+def write_table6(rows: list[dict[str, Any]], *, md_path: Path | None = None, csv_path: Path | None = None) -> None:
+    headers = [
+        "attack_family",
+        "runs",
+        "sink_runs",
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "runs_with_divergence",
+        "high_severity",
+        "total_divergences",
+        "runs_with_divergence_rate",
+        "sink_run_divergence_rate",
+    ]
+    if csv_path:
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        with csv_path.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=headers)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    if md_path:
+        md_path.parent.mkdir(parents=True, exist_ok=True)
+        lines = ["# Table 6: Narrative/Trace Divergence", ""]
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("|" + "---|" * len(headers))
+        for row in rows:
+            lines.append("| " + " | ".join(str(row.get(h, "")) for h in headers) + " |")
+        md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 # ── Demo: run on the uploaded single trace+report ────────────────────────────
 if __name__ == "__main__":
-    import sys
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Analyze trace/report divergence and optionally export Table 6.")
+    parser.add_argument("paths", nargs="+", help="Either <runs_dir> or <trace.jsonl> <report.json>.")
+    parser.add_argument("--table6-md", type=Path, help="Write Table 6 as Markdown.")
+    parser.add_argument("--table6-csv", type=Path, help="Write Table 6 as CSV.")
+    args = parser.parse_args()
 
     # Single-run mode: python divergence_analyzer.py <trace.jsonl> <report.json>
-    if len(sys.argv) == 3:
-        trace_f, report_f = sys.argv[1], sys.argv[2]
+    if len(args.paths) == 2:
+        trace_f, report_f = args.paths[0], args.paths[1]
         record = parse_run(trace_f, report_f)
         print(f"Run:      {record.run_id}")
         print(f"Attack:   {record.attack_family}")
@@ -469,11 +574,11 @@ if __name__ == "__main__":
                 print(f"  Narrative: {d.narrative_claim[:100]}")
 
     # Directory mode: python divergence_analyzer.py <runs_dir>
-    elif len(sys.argv) == 2:
-        results = analyze_runs(sys.argv[1])
+    elif len(args.paths) == 1:
+        results = analyze_runs(args.paths[0])
+        if args.table6_md or args.table6_csv:
+            write_table6(results["table6"], md_path=args.table6_md, csv_path=args.table6_csv)
         print(json.dumps(results, indent=2, ensure_ascii=False))
 
     else:
-        print("Usage:")
-        print("  python divergence_analyzer.py <trace.jsonl> <report.json>  # single run")
-        print("  python divergence_analyzer.py <runs_dir>                   # batch")
+        parser.error("Use either <runs_dir> or <trace.jsonl> <report.json>.")

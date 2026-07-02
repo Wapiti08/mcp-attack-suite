@@ -159,6 +159,8 @@ def run_axis1_via_evaluator(
     label_to_code = {
         "P1: Tool Description as Policy": "P1",
         "P2: Overly Permissive Schema":   "P2",
+        "P3: Cross-Tool Forwarding":      "P3",
+        "P4: Image-to-Tool Leakage":      "P4",
         "P5: Missing Audit Logs":         "P5",
         "P6: Unvalidated Inputs":         "P6",
     }

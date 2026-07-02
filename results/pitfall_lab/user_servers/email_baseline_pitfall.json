@@ -1,9 +1,11 @@
 {
   "server": "email_baseline",
-  "total_findings": 8,
+  "total_findings": 10,
   "detected_classes": [
     "P1",
     "P2",
+    "P3",
+    "P4",
     "P5",
     "P6"
   ],
@@ -19,13 +21,13 @@
       "gt": true
     },
     "P3": {
-      "outcome": "FN",
-      "detected": false,
+      "outcome": "TP",
+      "detected": true,
       "gt": true
     },
     "P4": {
-      "outcome": "FN",
-      "detected": false,
+      "outcome": "TP",
+      "detected": true,
       "gt": true
     },
     "P5": {
@@ -41,11 +43,11 @@
   },
   "raw_report": {
     "server_id": "/Users/zhuoran/Projects/mcp-attack-suite/sample_servers/email_baseline.py",
-    "timestamp": "2026-02-17T15:22:37.621340",
+    "timestamp": "2026-07-02T20:55:03.479041",
     "static_analysis": {
-      "total_findings": 8,
+      "total_findings": 10,
       "findings_by_severity": {
-        "HIGH": 4,
+        "HIGH": 6,
         "MEDIUM": 4,
         "LOW": 0
       },
@@ -121,6 +123,24 @@
           "evidence": "No input validation found for sensitive parameters",
           "message": "",
           "mitigation": "Add server-side validation (allowlists, format checks, etc.)"
+        },
+        {
+          "pitfall": "P3: Cross-Tool Forwarding",
+          "severity": "HIGH",
+          "tool": "send_teams_message",
+          "parameter": null,
+          "evidence": "Source tools ['read_emails', 'search_emails'] and sink tools ['send_teams_message'] are present without data-flow mitigation signals",
+          "message": "Untrusted source content can be forwarded to an outbound or write sink",
+          "mitigation": "Add data minimization/redaction, source provenance tracking, and sink-side allowlists"
+        },
+        {
+          "pitfall": "P4: Image-to-Tool Leakage",
+          "severity": "HIGH",
+          "tool": "extract_image_content",
+          "parameter": null,
+          "evidence": "Image-capable tools ['extract_image_content'] coexist with sink tools ['send_teams_message'] without multimodal provenance/validation signals",
+          "message": "Image-derived text can be interpreted as instructions and propagated to downstream tools",
+          "mitigation": "Treat OCR/image output as untrusted, log provenance, and restrict high-risk sinks for image-derived content"
         }
       ]
     },
@@ -236,6 +256,42 @@
             "evidence": "No input validation found for sensitive parameters",
             "message": "",
             "mitigation": "Add server-side validation (allowlists, format checks, etc.)"
+          }
+        ]
+      },
+      "P3: Cross-Tool Forwarding": {
+        "count": 1,
+        "severity": "HIGH",
+        "tools_affected": [
+          "send_teams_message"
+        ],
+        "examples": [
+          {
+            "pitfall": "P3: Cross-Tool Forwarding",
+            "severity": "HIGH",
+            "tool": "send_teams_message",
+            "parameter": null,
+            "evidence": "Source tools ['read_emails', 'search_emails'] and sink tools ['send_teams_message'] are present without data-flow mitigation signals",
+            "message": "Untrusted source content can be forwarded to an outbound or write sink",
+            "mitigation": "Add data minimization/redaction, source provenance tracking, and sink-side allowlists"
+          }
+        ]
+      },
+      "P4: Image-to-Tool Leakage": {
+        "count": 1,
+        "severity": "HIGH",
+        "tools_affected": [
+          "extract_image_content"
+        ],
+        "examples": [
+          {
+            "pitfall": "P4: Image-to-Tool Leakage",
+            "severity": "HIGH",
+            "tool": "extract_image_content",
+            "parameter": null,
+            "evidence": "Image-capable tools ['extract_image_content'] coexist with sink tools ['send_teams_message'] without multimodal provenance/validation signals",
+            "message": "Image-derived text can be interpreted as instructions and propagated to downstream tools",
+            "mitigation": "Treat OCR/image output as untrusted, log provenance, and restrict high-risk sinks for image-derived content"
           }
         ]
       }

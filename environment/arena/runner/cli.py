@@ -25,6 +25,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     run.add_argument("--out", default=str(default_out), help="Output directory for run artifacts.")
+    run.add_argument("--model", help="Override OPENAI_MODEL for this run.")
 
     args = parser.parse_args(argv)
 
@@ -35,6 +36,7 @@ def main(argv: list[str] | None = None) -> int:
                 submission=str(args.submission),
                 attack=str(args.attack),
                 out_dir=Path(args.out),
+                model=str(args.model) if args.model else None,
             )
             print(json.dumps(result, indent=2, ensure_ascii=False))
             return 0 if result.get("ok") else 2

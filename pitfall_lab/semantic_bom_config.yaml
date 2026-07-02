@@ -1,0 +1,104 @@
+field_variants:
+  component_only:
+    - component_identity
+
+  schema_only:
+    - component_identity
+    - tool_names
+    - schemas
+
+  semantic_static:
+    - component_identity
+    - server_instructions
+    - tool_names
+    - descriptions
+    - tool_instructions
+    - schemas
+    - high_risk_params
+    - capability_roles
+    - trust_boundary
+    - policy_hooks
+    - audit_support
+
+  semantic_trace:
+    - component_identity
+    - server_instructions
+    - tool_names
+    - descriptions
+    - tool_instructions
+    - schemas
+    - high_risk_params
+    - capability_roles
+    - trust_boundary
+    - policy_hooks
+    - audit_support
+    - trace_provenance
+
+keywords:
+  high_risk_params:
+    - recipient
+    - to
+    - cc
+    - bcc
+    - channel
+    - destination
+    - address
+    - path
+    - file
+    - filename
+    - url
+    - command
+    - token
+    - secret
+    - password
+
+  source_tools:
+    - read
+    - fetch
+    - get
+    - search
+    - extract
+    - list
+
+  sink_tools:
+    - send
+    - post
+    - submit
+    - write
+    - convert
+    - transfer
+    - notify
+    - append
+
+markers:
+  instructions:
+    - "always "
+    - "must "
+    - "never "
+    - "do not "
+    - "don't "
+    - "without confirmation"
+    - "without user confirmation"
+    - "automatically "
+    - "before using"
+    - "after using"
+    - "when calling"
+    - "when using"
+
+  policy:
+    - always
+    - must
+    - automatically
+    - never ask
+    - without confirmation
+    - without user confirmation
+    - do not ask
+
+  audit:
+    - logging.
+    - logger.
+    - audit_log
+    - .info(
+    - .warning(
+    - .error(
+    - print(

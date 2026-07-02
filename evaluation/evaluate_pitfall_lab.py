@@ -213,6 +213,10 @@ class PitfallLabEvaluator:
         # P6: Unvalidated Inputs (only when no server-side validation in code)
         if code_text:
             findings.extend(self._detect_missing_validation(code_text, schema))
+
+        # P3/P4: cross-tool and image-derived source-to-sink flows.
+        findings.extend(self._detect_cross_tool_forwarding(code_text, schema))
+        findings.extend(self._detect_image_to_tool_leakage(code_text, schema))
         
         # Group by severity
         findings_by_severity = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
@@ -257,6 +261,108 @@ class PitfallLabEvaluator:
                         mitigation="Remove policy from description, enforce server-side"
                     ))
         
+        return findings
+
+    def _tool_names(self, schema: dict) -> list[str]:
+        return [str(tool.get("name", "")) for tool in schema.get("tools", [])]
+
+    def _tool_description(self, tool: dict) -> str:
+        return str(tool.get("description", "") or "")
+
+    def _has_flow_mitigation(self, code: str) -> bool:
+        if not code:
+            return False
+        mitigation_patterns = [
+            r"\bALLOWED_",
+            r"\bredact",
+            r"\bminimi[sz]ation\b",
+            r"\bsanitiz",
+            r"\buntrusted\b",
+            r"\bprovenance\b",
+            r"\bclassification\b",
+            r"not_in_allowlist",
+        ]
+        return any(re.search(p, code, re.IGNORECASE) for p in mitigation_patterns)
+
+    def _detect_cross_tool_forwarding(self, code: str, schema: dict) -> list[PitfallFinding]:
+        """Detect source+sink combinations that enable cross-tool forwarding (P3)."""
+        findings: list[PitfallFinding] = []
+        tools = schema.get("tools", [])
+        source_patterns = [
+            r"^read_emails$",
+            r"^search_emails$",
+            r"^list_documents$",
+            r"^get_document$",
+            r"^read_documents$",
+        ]
+        sink_patterns = [
+            r"^send_teams_message$",
+            r"^send_email$",
+            r"^submit_document$",
+            r"^convert_file$",
+            r"^write_file$",
+        ]
+
+        sources = [
+            str(t.get("name", ""))
+            for t in tools
+            if any(re.search(p, str(t.get("name", "")), re.IGNORECASE) for p in source_patterns)
+        ]
+        sinks = [
+            str(t.get("name", ""))
+            for t in tools
+            if any(re.search(p, str(t.get("name", "")), re.IGNORECASE) for p in sink_patterns)
+        ]
+
+        if sources and sinks and not self._has_flow_mitigation(code):
+            findings.append(
+                PitfallFinding(
+                    pitfall="P3: Cross-Tool Forwarding",
+                    severity="HIGH",
+                    tool=", ".join(sinks),
+                    evidence=f"Source tools {sources} and sink tools {sinks} are present without data-flow mitigation signals",
+                    message="Untrusted source content can be forwarded to an outbound or write sink",
+                    mitigation="Add data minimization/redaction, source provenance tracking, and sink-side allowlists",
+                )
+            )
+
+        return findings
+
+    def _detect_image_to_tool_leakage(self, code: str, schema: dict) -> list[PitfallFinding]:
+        """Detect image-derived content paths that can reach sinks (P4)."""
+        findings: list[PitfallFinding] = []
+        tools = schema.get("tools", [])
+        sink_names = {
+            "send_teams_message",
+            "send_email",
+            "submit_document",
+            "convert_file",
+            "write_file",
+        }
+        image_tools: list[str] = []
+        sinks: list[str] = []
+
+        for tool in tools:
+            name = str(tool.get("name", ""))
+            desc = self._tool_description(tool)
+            combined = f"{name}\n{desc}".lower()
+            if any(term in combined for term in ("image", "ocr", "attachment", "scanned", "screenshot")):
+                image_tools.append(name)
+            if name in sink_names:
+                sinks.append(name)
+
+        if image_tools and sinks and not self._has_flow_mitigation(code):
+            findings.append(
+                PitfallFinding(
+                    pitfall="P4: Image-to-Tool Leakage",
+                    severity="HIGH",
+                    tool=", ".join(image_tools),
+                    evidence=f"Image-capable tools {image_tools} coexist with sink tools {sinks} without multimodal provenance/validation signals",
+                    message="Image-derived text can be interpreted as instructions and propagated to downstream tools",
+                    mitigation="Treat OCR/image output as untrusted, log provenance, and restrict high-risk sinks for image-derived content",
+                )
+            )
+
         return findings
 
     def _detect_permissive_schemas(self, schema: dict) -> list[PitfallFinding]:

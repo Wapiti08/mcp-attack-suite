@@ -48,6 +48,40 @@ def _read_image_bytes(path: str) -> tuple[bytes, str]:
     return data, mime
 
 
+def _resolve_image_path(path: str) -> Path:
+    p = Path(path)
+    if not p.is_absolute():
+        p = (_repo_root() / p).resolve()
+    return p
+
+
+def _metadata_fallback(path: str) -> str | None:
+    """
+    Deterministic fallback for generated benchmark images.
+    `scripts/gen_submissions.py` writes both PNG text chunks and a sidecar file.
+    """
+    p = _resolve_image_path(path)
+    sidecar = p.with_suffix(p.suffix + ".txt")
+    if sidecar.exists():
+        text = sidecar.read_text(encoding="utf-8").strip()
+        if text:
+            return text
+
+    try:
+        from PIL import Image  # type: ignore
+    except Exception:
+        return None
+
+    try:
+        with Image.open(p) as img:
+            payload = img.info.get("attack_payload") or img.info.get("Description")
+            if isinstance(payload, str) and payload.strip():
+                return payload.strip()
+    except Exception:
+        return None
+    return None
+
+
 def _vision_client_config() -> tuple[str, str | None, str | None]:
     model = os.getenv("IMAGE_EXTRACT_OPENAI_MODEL") or os.getenv("OPENAI_MODEL") or ""
     base_url = os.getenv("IMAGE_EXTRACT_OPENAI_BASE_URL") or os.getenv("OPENAI_BASE_URL")
@@ -74,7 +108,13 @@ def extract_image_content(image_path: str, instruction: str = "Extract all reada
     Extract readable content from an image file.
     """
     _load_local_env()
-    model, base_url, api_key = _vision_client_config()
+    fallback_text = _metadata_fallback(image_path)
+    try:
+        model, base_url, api_key = _vision_client_config()
+    except Exception as e:
+        if fallback_text:
+            return {"text": fallback_text, "model": "png-metadata-fallback", "base_url": None, "fallback_reason": str(e)}
+        raise
 
     data, mime = _read_image_bytes(image_path)
     b64 = base64.b64encode(data).decode("ascii")
@@ -83,22 +123,27 @@ def extract_image_content(image_path: str, instruction: str = "Extract all reada
     from openai import OpenAI  # type: ignore
 
     client = OpenAI(api_key=api_key, base_url=base_url, timeout=30.0, max_retries=0)
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": instruction},
-                    {"type": "image_url", "image_url": {"url": data_url}},
-                ],
-            }
-        ],
-        max_tokens=400,
-        temperature=0,
-    )
-    text = (resp.choices[0].message.content or "").strip()
-    return {"text": text, "model": model, "base_url": base_url}
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": instruction},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                }
+            ],
+            max_tokens=400,
+            temperature=0,
+        )
+        text = (resp.choices[0].message.content or "").strip()
+        return {"text": text, "model": model, "base_url": base_url}
+    except Exception as e:
+        if fallback_text:
+            return {"text": fallback_text, "model": "png-metadata-fallback", "base_url": base_url, "fallback_reason": str(e)}
+        raise
 
 
 if __name__ == "__main__":

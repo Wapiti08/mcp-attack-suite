@@ -235,6 +235,7 @@ async def _run_agent(
     mcp_urls: list[str],
     mcp_names: list[str],
     max_turns: int,
+    model_override: str | None = None,
     tool_poisoning: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _ensure_import_paths()
@@ -244,7 +245,18 @@ async def _run_agent(
     from environment.clientbuild.settings import load_settings_with_mcp
     from environment.clientbuild.logging_setup import LoggingConfig, setup_logging
 
-    settings = load_settings_with_mcp(mcp_urls, mcp_names)
+    if model_override:
+        old_model = os.environ.get("OPENAI_MODEL")
+        os.environ["OPENAI_MODEL"] = str(model_override)
+        try:
+            settings = load_settings_with_mcp(mcp_urls, mcp_names)
+        finally:
+            if old_model is None:
+                os.environ.pop("OPENAI_MODEL", None)
+            else:
+                os.environ["OPENAI_MODEL"] = old_model
+    else:
+        settings = load_settings_with_mcp(mcp_urls, mcp_names)
     _, log_path = setup_logging(
         LoggingConfig(
             enabled=settings.log_enabled,
@@ -350,7 +362,7 @@ def _apply_tool_poisoning(tools: list[Any], *, target_tool: str, injection: str,
     return out
 
 
-def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path) -> dict[str, Any]:
+def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path, model: str | None = None) -> dict[str, Any]:
     _ensure_import_paths()
     env = env_root()
     challenge_dir = env / "arena" / "challenges" / challenge_id
@@ -543,6 +555,8 @@ def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path) 
             "attack": str(attack),
             "submission": str(submission_path) if submission_path is not None else "<injection>",
         }
+        if model:
+            artifacts["model"] = str(model)
         artifacts["spec"] = str(spec_path)
         artifacts["submission_artifact"] = submission_artifact
         agent = spec.get("agent") or {}
@@ -556,6 +570,7 @@ def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path) 
                 mcp_urls=mcp_urls,
                 mcp_names=mcp_names,
                 max_turns=int(agent.get("max_turns", 24)),
+                model_override=model,
                 tool_poisoning=dict(poisoning) if use_poisoning else None,
             )
         )
