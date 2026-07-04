@@ -1,18 +1,18 @@
 """
 MCP Pitfall Lab - Schema Extractor for FastMCP Servers
-Generates the --server-schema JSON required by evaluate_pitfall_lab.py
+Generates the --server-schema JSON required by static/evaluate_pitfall_lab.py
 by parsing FastMCP server source via AST (no server execution needed).
 
 Usage:
     # Generate schema for a single server
-    python evaluation/extract_schema.py sample_servers/email_baseline.py \
+    python -m evaluation.schema.extract_schema sample_servers/email_baseline.py \
         --output results/pitfall_lab/user_servers/email_baseline_schema.json
 
     # Generate schemas for all sample servers at once
-    python evaluation/extract_schema.py --all-sample-servers
+    python -m evaluation.schema.extract_schema --all-sample-servers
 
     # Then run the correct evaluation:
-    python evaluation/evaluate_pitfall_lab.py \
+    python -m evaluation.static.evaluate_pitfall_lab \
         --server-code sample_servers/email_baseline.py \
         --server-schema results/pitfall_lab/user_servers/email_baseline_schema.json \
         --static-only \
@@ -25,6 +25,13 @@ import ast
 import argparse
 import json
 from pathlib import Path
+
+from evaluation.common.paths import (
+    EVAL_RESULTS_DIR,
+    GROUND_TRUTH_PATH,
+    PITFALL_RESULTS_DIR,
+    SAMPLE_SERVERS_DIR,
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -144,9 +151,7 @@ def run_axis1_via_evaluator(
     Run evaluate_pitfall_lab.PitfallLabEvaluator on one server,
     then compare against ground truth to get TP/FP/FN per pitfall class.
     """
-    import sys
-    sys.path.insert(0, str(Path(__file__).parent))
-    from evaluate_pitfall_lab import PitfallLabEvaluator
+    from evaluation.static.evaluate_pitfall_lab import PitfallLabEvaluator
 
     evaluator = PitfallLabEvaluator()
     report = evaluator.evaluate_server(
@@ -248,10 +253,8 @@ def compute_metrics(per_server_results: list[dict]) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    REPO_ROOT   = Path(__file__).resolve().parents[1]
-    SERVERS_DIR = REPO_ROOT / "sample_servers"
-    EVAL_DIR    = REPO_ROOT / "evaluation"
-    RESULTS_DIR = REPO_ROOT / "results" / "pitfall_lab" / "user_servers"
+    SERVERS_DIR = SAMPLE_SERVERS_DIR
+    RESULTS_DIR = PITFALL_RESULTS_DIR
 
     ap = argparse.ArgumentParser(
         description="Extract MCP schema from FastMCP server and run Axis 1 evaluation."
@@ -265,8 +268,8 @@ def main() -> None:
     ap.add_argument("--eval", action="store_true",
                     help="Also run Axis 1 evaluation after extracting schema")
     ap.add_argument("--ground-truth", type=Path,
-                    default=EVAL_DIR / "ground_truth.json",
-                    help="Ground truth JSON for evaluation (default: evaluation/ground_truth.json)")
+                    default=GROUND_TRUTH_PATH,
+                    help="Ground truth JSON for evaluation (default: evaluation/data/ground_truth.json)")
     args = ap.parse_args()
 
     if args.all_sample_servers:
@@ -318,10 +321,11 @@ def main() -> None:
         print(f"\n  Aggregate: P={agg['precision']} R={agg['recall']} F1={agg['f1']}")
         print(f"  Mean analysis time: {avg_ms:.1f} ms/server")
 
-        axis1_out = EVAL_DIR / "axis1_results.json"
+        EVAL_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        axis1_out = EVAL_RESULTS_DIR / "axis1_results.json"
         axis1_out.write_text(json.dumps({
             "axis": 1,
-            "description": "Static analysis via evaluate_pitfall_lab.py + ground_truth.json",
+            "description": "Static analysis via evaluation.static.evaluate_pitfall_lab + evaluation/data/ground_truth.json",
             "mean_time_ms": round(avg_ms, 1),
             "per_server":   {r["server"]: r["per_class"] for r in per_server_results},
             **metrics,

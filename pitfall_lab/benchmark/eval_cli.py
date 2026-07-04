@@ -15,8 +15,8 @@ from .evaluator import (
     evaluate_scenario_from_runs,
     compare_scenarios,
 )
-from .parser import parse_run
-from .runner import ensure_arena_importable
+from pitfall_lab.core.parser import parse_run
+from pitfall_lab.core.runner import ensure_arena_importable
 
 
 def cmd_evaluate_scenario(args: argparse.Namespace) -> int:

@@ -41,7 +41,7 @@
   },
   "raw_report": {
     "server_id": "/Users/zhuoran/Projects/mcp-attack-suite/sample_servers/crypto_baseline.py",
-    "timestamp": "2026-07-02T20:55:03.469536",
+    "timestamp": "2026-07-04T13:47:53.114663",
     "static_analysis": {
       "total_findings": 12,
       "findings_by_severity": {

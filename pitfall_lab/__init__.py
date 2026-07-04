@@ -12,10 +12,10 @@ __version__ = "0.3.0"
 # ============================================================================
 
 # Runner: Execute challenges
-from .runner import run_challenge, get_run_dir
+from .core.runner import run_challenge, get_run_dir
 
 # Parser: Analyze run results
-from .parser import (
+from .core.parser import (
     parse_run,
     summarize_run,
     RunAnalysis,
@@ -24,7 +24,7 @@ from .parser import (
 )
 
 # Reporter: Generate reports
-from .reporter import generate_report
+from .core.reporter import generate_report
 
 
 # ============================================================================
@@ -32,7 +32,7 @@ from .reporter import generate_report
 # ============================================================================
 
 # Evaluator: Assess benchmark quality
-from .evaluator import (
+from .benchmark.evaluator import (
     evaluate_scenario_from_spec,
     evaluate_scenario_from_runs,
     compare_scenarios,
@@ -45,13 +45,13 @@ from .evaluator import (
 # ============================================================================
 
 # Main functions
-from .taxonomy import (
+from .benchmark.taxonomy import (
     load_taxonomy,
     get_coverage_report
 )
 
 # Advanced: For custom analysis
-from .taxonomy import (
+from .benchmark.taxonomy import (
     Taxonomy,
     get_scenario_threats
 )
@@ -62,10 +62,10 @@ from .taxonomy import (
 # ============================================================================
 
 # Main function
-from .evidence import analyze_evidence_vs_self_report
+from .core.evidence import analyze_evidence_vs_self_report
 
 # Result type
-from .evidence import EvidenceVsSelfReport
+from .core.evidence import EvidenceVsSelfReport
 
 
 # ============================================================================
@@ -73,13 +73,32 @@ from .evidence import EvidenceVsSelfReport
 # ============================================================================
 
 # Main functions
-from .pitfall_gallery import (
+from .benchmark.pitfall_gallery import (
     generate_pitfall_gallery,
     generate_pitfall_report
 )
 
 # Result type
-from .pitfall_gallery import PitfallReport
+from .benchmark.pitfall_gallery import PitfallReport
+
+
+# ============================================================================
+# Semantic MCP-BOM: Manifest Construction and Vetting
+# ============================================================================
+
+from .bom import (
+    BOMFinding,
+    SemanticBOMConfig,
+    SemanticMCPBOM,
+    SemanticTool,
+    analyze_trace_provenance,
+    bom_to_dict,
+    build_semantic_bom,
+    load_semantic_bom_config,
+    representable_classes,
+    run_bom_checks,
+    score_bom_risk,
+)
 
 
 # ============================================================================
@@ -121,4 +140,17 @@ __all__ = [
     "generate_pitfall_gallery",
     "generate_pitfall_report",
     "PitfallReport",
+
+    # Semantic MCP-BOM
+    "SemanticBOMConfig",
+    "SemanticMCPBOM",
+    "SemanticTool",
+    "BOMFinding",
+    "build_semantic_bom",
+    "bom_to_dict",
+    "load_semantic_bom_config",
+    "run_bom_checks",
+    "representable_classes",
+    "score_bom_risk",
+    "analyze_trace_provenance",
 ]

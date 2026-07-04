@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .parser import RunAnalysis
+from pitfall_lab.core.parser import RunAnalysis
 from .taxonomy import Taxonomy
 
 
@@ -366,6 +366,5 @@ def generate_gallery_index(gallery: dict[str, PitfallReport]) -> str:
             lines.append("")
     
     return "\n".join(lines)
-
 
 

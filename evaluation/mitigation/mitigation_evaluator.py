@@ -18,10 +18,13 @@ import re
 import ast
 import json
 import math
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 from pathlib import Path
-from static_analyzer import StaticAnalyzer, PitfallClass, Severity
+
+from evaluation.common.paths import EVAL_RESULTS_DIR, SAMPLE_SERVERS_DIR
+from evaluation.schema.extract_schema import extract_schema
+from evaluation.static.evaluate_pitfall_lab import PitfallLabEvaluator
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -125,13 +128,13 @@ def extract_metrics(server_path: str, variant: str) -> StructuralMetrics:
     lines  = source.splitlines()
     loc    = sum(1 for l in lines if l.strip() and not l.strip().startswith("#"))
 
-    analyzer = StaticAnalyzer()
     try:
         tree = ast.parse(source)
     except SyntaxError:
         tree = None
 
-    tools = analyzer._extract_tools(source, tree) if tree else []
+    schema = extract_schema(source)
+    tools = schema.get("tools", [])
     tool_count = len(tools)
 
     # Per-tool checks
@@ -168,8 +171,16 @@ def extract_metrics(server_path: str, variant: str) -> StructuralMetrics:
         if any(re.search(p, m.group(1), re.IGNORECASE) for p in POLICY_PATTERNS)
     )
 
-    # Run full static analyzer for risk score + pitfall list
-    report = analyzer.analyze_file(server_path)
+    # Run full static evaluator for risk score + pitfall list.
+    report = PitfallLabEvaluator().evaluate_server(
+        server_code=path,
+        server_schema=schema,
+        static_only=True,
+    )
+    findings = report["static_analysis"]["findings"]
+    severity_weight = {"HIGH": 3.0, "MEDIUM": 1.0, "LOW": 0.25}
+    risk_score = sum(severity_weight.get(f.get("severity", ""), 0.0) for f in findings)
+    pitfalls_detected = sorted({f.get("pitfall", "") for f in findings if f.get("pitfall")})
 
     return StructuralMetrics(
         server_name=path.stem,
@@ -181,8 +192,8 @@ def extract_metrics(server_path: str, variant: str) -> StructuralMetrics:
         constrained_params=constrained,
         unconstrained_sensitive_params=unconstrained,
         policy_descriptions=policy_descs,
-        risk_score=report.risk_score,
-        pitfalls_detected=[p for p, v in report.pitfall_coverage.items() if v],
+        risk_score=risk_score,
+        pitfalls_detected=pitfalls_detected,
     )
 
 
@@ -270,11 +281,10 @@ def run_mitigation_evaluation(server_pairs: List[Tuple[str, str, str]]) -> Dict:
 
 if __name__ == "__main__":
     # Example: compare baseline vs hardened for each domain
-    import sys, os
-    sys.path.insert(0, os.path.dirname(__file__))
+    import sys
     from pathlib import Path
 
-    base_dir = Path(__file__).parent.parent / "sample_servers"
+    base_dir = SAMPLE_SERVERS_DIR
     pairs = [
         ("emailsystem",   str(base_dir / "email_baseline.py"),   str(base_dir / "email_hardened.py")),
         ("documentsystem",str(base_dir / "doc_baseline.py"),      str(base_dir / "doc_hardened.py")),
@@ -293,6 +303,8 @@ if __name__ == "__main__":
     print("="*60)
     for k, v in output["aggregate"].items():
         print(f"  {k}: {v}")
-    print("\nFull results saved to mitigation_results.json")
-    with open("mitigation_results.json", "w") as f:
+    EVAL_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = EVAL_RESULTS_DIR / "mitigation_results.json"
+    print(f"\nFull results saved to {output_path}")
+    with output_path.open("w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)

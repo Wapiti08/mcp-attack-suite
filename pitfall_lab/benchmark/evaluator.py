@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .parser import RunAnalysis
+from pitfall_lab.core.parser import RunAnalysis
 
 
 @dataclass

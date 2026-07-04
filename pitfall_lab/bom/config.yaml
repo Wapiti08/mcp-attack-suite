@@ -87,7 +87,9 @@ markers:
 
   policy:
     - always
-    - must
+    - must send
+    - must forward
+    - must transfer
     - automatically
     - never ask
     - without confirmation

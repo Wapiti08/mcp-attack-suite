@@ -291,7 +291,7 @@ run_evaluation() {
     fi
     
     # Run evaluation
-    if python evaluation/evaluate_source_asr.py \
+    if python -m evaluation.source_benchmark.evaluate_source_asr \
         --challenge "$challenge" \
         --submissions-dir "$submissions_dir" \
         --model "$model_id" \

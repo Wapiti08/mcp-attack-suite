@@ -6,11 +6,19 @@ This directory contains the complete evaluation framework for MCP Pitfall Lab, s
 
 ```
 evaluation/
-├── evaluate_source_asr.py      # Source Benchmark ASR evaluator
-├── evaluate_pitfall_lab.py     # Pitfall Lab protocol-aware evaluator
+├── common/                      # Shared paths and evaluation helpers
+├── configs/                     # Evaluation configs, e.g. models_config.yaml
+├── data/                        # Evaluation labels, e.g. ground_truth.json
+├── schema/                      # MCP schema extraction
+├── static/                      # Static Pitfall Lab evaluator
+├── semantic_bom/                # Semantic MCP-BOM utility experiments
+├── source_benchmark/            # Source ASR and multi-model evaluators
+├── trace/                       # Trace/narrative divergence analysis
+├── mitigation/                  # Baseline-to-hardened comparison
 └── README.md                    # This file
 
 ../results/                      # Evaluation results (auto-created)
+├── evaluation/                  # Shared evaluation result snapshots
 ├── source_benchmark/           # Source ASR results
 │   ├── emailsystem/
 │   ├── documentsystem/
@@ -35,7 +43,7 @@ python scripts/gen_submissions.py \
 
 
 # Run Source Benchmark evaluation
-python evaluation/evaluate_source_asr.py \
+python -m evaluation.source_benchmark.evaluate_source_asr \
   --challenge emailsystem \
   --submissions-dir environment/submissions/generated/emailsystem/latest \
   --output results/source_benchmark/emailsystem/run_001.json
@@ -46,7 +54,7 @@ python evaluation/evaluate_source_asr.py \
 Evaluate MCP server security (static analysis only):
 
 ```bash
-python evaluation/evaluate_pitfall_lab.py \
+python -m evaluation.static.evaluate_pitfall_lab \
   --server-code path/to/my_server.py \
   --server-schema path/to/my_schema.json \
   --static-only \
@@ -217,21 +225,21 @@ environment/submissions/generated/emailsystem/20260215_120000/
 ### Step 2: Run Source Benchmark Evaluation
 
 ```bash
-python evaluation/evaluate_source_asr.py \
+python -m evaluation.source_benchmark.evaluate_source_asr \
   --challenge emailsystem \
   --submissions-dir environment/submissions/generated/emailsystem/20260216_154811 \
   --attack-types tool_poisoning multimodal_attack puppet \
   --num-runs 3 \
   --output results/source_benchmark/emailsystem/20260216_experiment1.json
 
-python evaluation/evaluate_source_asr.py \
+python -m evaluation.source_benchmark.evaluate_source_asr \
   --challenge documentsystem \
   --submissions-dir environment/submissions/generated/documentsystem/20260217_100116 \
   --attack-types tool_poisoning multimodal_attack puppet \
   --num-runs 3 \
   --output results/source_benchmark/documentsystem/20260217_experiment1.json
 
-python evaluation/evaluate_source_asr.py \
+python -m evaluation.source_benchmark.evaluate_source_asr \
   --challenge ETHPriceServer \
   --submissions-dir environment/submissions/generated/ETHPriceServer/20260217_150559 \
   --attack-types tool_poisoning multimodal_attack puppet \
@@ -293,7 +301,7 @@ Overall ASR: 76.7%
 
 ```bash
 # Static analysis only (recommended first step)
-python evaluation/evaluate_pitfall_lab.py \
+python -m evaluation.static.evaluate_pitfall_lab \
   --server-code my_email_server.py \
   --server-schema my_email_schema.json \
   --static-only \
@@ -330,7 +338,7 @@ Pitfall Summary:
 After fixing the issues:
 
 ```bash
-python evaluation/evaluate_pitfall_lab.py \
+python -m evaluation.static.evaluate_pitfall_lab \
   --server-code my_email_server_fixed.py \
   --server-schema my_email_schema_fixed.json \
   --static-only \
@@ -355,7 +363,7 @@ Pitfall Summary:
 ```bash
 # Run all attack types for all challenges
 for challenge in emailsystem documentsystem ETHPriceServer; do
-  python evaluation/evaluate_source_asr.py \
+  python -m evaluation.source_benchmark.evaluate_source_asr \
     --challenge $challenge \
     --submissions-dir environment/submissions/generated/$challenge/latest \
     --output results/source_benchmark/$challenge/paper_results.json
@@ -366,7 +374,7 @@ done
 
 ```bash
 # Quick static analysis before deploying MCP server
-python evaluation/evaluate_pitfall_lab.py \
+python -m evaluation.static.evaluate_pitfall_lab \
   --server-code production/email_server.py \
   --server-schema production/email_schema.json \
   --static-only \
@@ -405,7 +413,7 @@ jobs:
       
       - name: Run Pitfall Lab Static Analysis
         run: |
-          python evaluation/evaluate_pitfall_lab.py \
+          python -m evaluation.static.evaluate_pitfall_lab \
             --server-code src/email_server.py \
             --server-schema src/email_schema.json \
             --static-only \
@@ -445,7 +453,7 @@ for server in $SERVERS_DIR/*.py; do
   
   echo "Evaluating $server_name..."
   
-  python evaluation/evaluate_pitfall_lab.py \
+  python -m evaluation.static.evaluate_pitfall_lab \
     --server-code "$server" \
     --server-schema "$schema" \
     --static-only \
@@ -530,14 +538,14 @@ ls environment/submissions/generated/emailsystem/latest/
 
 Use fewer runs per submission:
 ```bash
-python evaluation/evaluate_source_asr.py \
+python -m evaluation.source_benchmark.evaluate_source_asr \
   --num-runs 1 \  # Instead of default 3
   ...
 ```
 
 Or run static analysis only:
 ```bash
-python evaluation/evaluate_pitfall_lab.py \
+python -m evaluation.static.evaluate_pitfall_lab \
   --static-only \  # Skip scenario execution
   ...
 ```

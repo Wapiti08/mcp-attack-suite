@@ -16,3 +16,5 @@ environment/**/logs/
 # results/
 
 environment/submissions/generated/
+environment/runs
+results

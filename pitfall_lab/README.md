@@ -28,23 +28,44 @@ Pitfall Lab provides two major capabilities:
 
 ## 📦 What's Included
 
-### Module Files (11 files)
+### Module Files
 
-Place in `pitfall_lab/` directory:
+Top-level package files:
 
 | File | Purpose |
 |------|---------|
 | `__init__.py` | Package initialization & exports |
 | `__main__.py` | `python -m pitfall_lab` entry point |
+| `cli.py` | Command-line interface (Phase 1 + 2) |
+
+Core run-analysis files live under `pitfall_lab/core/`:
+
+| File | Purpose |
+|------|---------|
 | `runner.py` | Bridge to arena execution engine |
 | `parser.py` | Parse `trace.jsonl` and `report.json` → `RunAnalysis` |
 | `evidence.py` | Divergence detection: self-report vs protocol evidence |
 | `reporter.py` | Generate Markdown / JSON reports |
-| `cli.py` | Command-line interface (Phase 1 + 2) |
+
+Benchmark files live under `pitfall_lab/benchmark/`:
+
+| File | Purpose |
+|------|---------|
 | `evaluator.py` | Scenario quality evaluation logic |
 | `eval_cli.py` | Evaluation CLI sub-commands |
 | `taxonomy.py` | Threat taxonomy and coverage reporting |
 | `pitfall_gallery.py` | Per-pitfall case study report generator |
+| `taxonomy.yaml` | Threat taxonomy config |
+| `suites.yaml` | Benchmark suite definitions |
+
+Semantic MCP-BOM files live under `pitfall_lab/bom/`:
+
+| File | Purpose |
+|------|---------|
+| `semantic_bom.py` | Build a Semantic MCP-BOM from server code and extracted MCP schema |
+| `checks.py` | Run BOM-backed pitfall checks, representability checks, and risk scoring |
+| `trace_provenance.py` | Link runtime traces to source/transformer/sink paths |
+| `config.yaml` | Configure field variants, high-risk keywords, role keywords, and markers |
 
 ### Arena Runner Files (separate, under `environment/arena/runner/`)
 

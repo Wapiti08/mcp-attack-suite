@@ -6,13 +6,13 @@ Handles heterogeneous server implementations through semantic tool mapping.
 
 Usage:
     # Static analysis only (fast)
-    python evaluate_pitfall_lab.py \\
+    python -m evaluation.static.evaluate_pitfall_lab \\
         --server-code my_server.py \\
         --server-schema my_schema.json \\
         --static-only
 
     # Full evaluation with scenarios
-    python evaluate_pitfall_lab.py \\
+    python -m evaluation.static.evaluate_pitfall_lab \\
         --challenge emailsystem \\
         --server-code email_server.py \\
         --server-schema email_schema.json
@@ -643,13 +643,13 @@ def main():
         epilog="""
 Examples:
   # Static analysis only (fast, works on any server)
-  python evaluate_pitfall_lab.py \\
+  python -m evaluation.static.evaluate_pitfall_lab \\
     --server-code my_server.py \\
     --server-schema my_schema.json \\
     --static-only
 
   # Full evaluation with scenario compatibility check
-  python evaluate_pitfall_lab.py \\
+  python -m evaluation.static.evaluate_pitfall_lab \\
     --challenge emailsystem \\
     --server-code email_server.py \\
     --server-schema email_schema.json

@@ -43,7 +43,7 @@
   },
   "raw_report": {
     "server_id": "/Users/zhuoran/Projects/mcp-attack-suite/sample_servers/doc_baseline.py",
-    "timestamp": "2026-07-02T20:55:03.474941",
+    "timestamp": "2026-07-04T13:47:53.119916",
     "static_analysis": {
       "total_findings": 11,
       "findings_by_severity": {

@@ -12,8 +12,8 @@ from typing import Any
 
 def ensure_arena_importable() -> None:
     """Add environment/ directory to sys.path so arena.runner can be imported."""
-    # Assume pitfall_lab/ is at repo_root/pitfall_lab/
-    repo_root = Path(__file__).resolve().parents[1]
+    # Assume core/ is at repo_root/pitfall_lab/core/
+    repo_root = Path(__file__).resolve().parents[2]
     env_path = repo_root / "environment"
     
     if not env_path.exists():

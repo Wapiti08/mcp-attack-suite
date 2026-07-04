@@ -13,9 +13,13 @@ import json
 import sys
 from pathlib import Path
 
-from .runner import run_challenge, get_run_dir, ensure_arena_importable
-from .parser import parse_run, summarize_run
-from .eval_cli import add_evaluation_commands, cmd_evaluate_scenario, cmd_compare_scenarios
+from .core.runner import run_challenge, get_run_dir, ensure_arena_importable
+from .core.parser import parse_run, summarize_run
+from .benchmark.eval_cli import (
+    add_evaluation_commands,
+    cmd_compare_scenarios,
+    cmd_evaluate_scenario,
+)
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -130,7 +134,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         analysis = parse_run(run_dir)
         
         # Import report generator
-        from .reporter import generate_report
+        from .core.reporter import generate_report
         
         report_path = generate_report(
             analysis,

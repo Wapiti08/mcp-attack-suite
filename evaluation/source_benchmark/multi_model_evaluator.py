@@ -22,6 +22,8 @@ from dataclasses import dataclass, asdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
 
+from evaluation.common.paths import MODELS_CONFIG_PATH, MULTI_MODEL_RESULTS_DIR
+
 @dataclass
 class ModelConfig:
     id: str
@@ -53,7 +55,7 @@ class EvaluationResult:
 
 class MultiModelEvaluator:
     def __init__(self, config_file: Path = None):
-        self.config_file = config_file or Path("models_config.yaml")
+        self.config_file = config_file or MODELS_CONFIG_PATH
         self.config = self._load_config()
         
     def _load_config(self) -> Dict:
@@ -141,7 +143,7 @@ class MultiModelEvaluator:
         output_file = output_dir / f"{task.model.id}__{task.challenge}.json"
         
         cmd = [
-            "python", "evaluation/evaluate_source_asr.py",
+            sys.executable, "-m", "evaluation.source_benchmark.evaluate_source_asr",
             "--challenge", task.challenge,
             "--submissions-dir", str(task.submissions_dir),
             "--model", task.model.id,
@@ -484,7 +486,7 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("results/multi_model_batch"),
+        default=MULTI_MODEL_RESULTS_DIR,
         help="Output directory for results"
     )
     

@@ -556,7 +556,8 @@ if __name__ == "__main__":
     parser.add_argument("--table6-csv", type=Path, help="Write Table 6 as CSV.")
     args = parser.parse_args()
 
-    # Single-run mode: python divergence_analyzer.py <trace.jsonl> <report.json>
+    # Single-run mode:
+    # python -m evaluation.trace.divergence_analyzer <trace.jsonl> <report.json>
     if len(args.paths) == 2:
         trace_f, report_f = args.paths[0], args.paths[1]
         record = parse_run(trace_f, report_f)
@@ -573,7 +574,8 @@ if __name__ == "__main__":
                 print(f"  Trace:     {d.trace_evidence}")
                 print(f"  Narrative: {d.narrative_claim[:100]}")
 
-    # Directory mode: python divergence_analyzer.py <runs_dir>
+    # Directory mode:
+    # python -m evaluation.trace.divergence_analyzer <runs_dir>
     elif len(args.paths) == 1:
         results = analyze_runs(args.paths[0])
         if args.table6_md or args.table6_csv:
