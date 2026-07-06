@@ -39,6 +39,59 @@ RISK_WEIGHTS = {
     "missing_audit": 1,
 }
 
+EXPOSURE_WEIGHTS = {
+    "source": 1,
+    "transformer": 1,
+    "sink": 2,
+    "high_risk_param": 2,
+    "cross_boundary_path": 2,
+}
+
+CONTROL_COVERAGE_WEIGHTS = {
+    "schema_constraint": 0.25,
+    "validation": 0.30,
+    "allowlist": 0.25,
+    "audit": 0.10,
+    "policy_hook": 0.10,
+}
+
+SCHEMA_CONSTRAINT_KEYS = {
+    "const",
+    "enum",
+    "format",
+    "maximum",
+    "maxItems",
+    "maxLength",
+    "minimum",
+    "minItems",
+    "minLength",
+    "pattern",
+}
+
+SAFETY_POLICY_MARKERS = [
+    "approved",
+    "pre-approved",
+    "allowlist",
+    "allow-list",
+    "blocked",
+    "must not be used as instructions",
+    "untrusted",
+    "validate",
+    "validation",
+    "confirmation",
+    "redact",
+    "minimiz",
+]
+
+UNSAFE_POLICY_MARKERS = [
+    "always forward",
+    "automatically forward",
+    "never ask",
+    "without confirmation",
+    "without user confirmation",
+    "do not ask",
+]
+
 
 def run_bom_checks(
     bom: SemanticMCPBOM,
@@ -195,3 +248,184 @@ def score_bom_risk(bom: SemanticMCPBOM) -> dict[str, Any]:
         "tool_scores": tool_scores,
     }
 
+
+def score_bom_decomposed(bom: SemanticMCPBOM) -> dict[str, Any]:
+    exposure = _score_exposure(bom)
+    coverage = _score_control_coverage(bom)
+    residual_score = round(
+        exposure["score"] * (1.0 - coverage["score"]),
+        3,
+    )
+
+    return {
+        "server": bom.server_name,
+        "exposure": exposure,
+        "control_coverage": coverage,
+        "residual_risk": {
+            "score": residual_score,
+            "formula": "exposure.score * (1 - control_coverage.score)",
+        },
+    }
+
+
+def _score_exposure(bom: SemanticMCPBOM) -> dict[str, Any]:
+    source_tools = [tool for tool in bom.tools if "source" in tool.roles]
+    transformer_tools = [tool for tool in bom.tools if "transformer" in tool.roles]
+    sink_tools = [tool for tool in bom.tools if "sink" in tool.roles]
+    upstream_tools = {
+        tool.name: tool
+        for tool in [*source_tools, *transformer_tools]
+    }
+    high_risk_param_count = sum(len(tool.high_risk_params) for tool in bom.tools)
+    cross_boundary_paths = len(upstream_tools) * len(sink_tools)
+
+    role_score = sum(
+        EXPOSURE_WEIGHTS.get(role, 0)
+        for tool in bom.tools
+        for role in tool.roles
+    )
+    high_risk_param_score = (
+        EXPOSURE_WEIGHTS["high_risk_param"] * high_risk_param_count
+    )
+    cross_boundary_score = (
+        EXPOSURE_WEIGHTS["cross_boundary_path"] * cross_boundary_paths
+    )
+    score = role_score + high_risk_param_score + cross_boundary_score
+
+    return {
+        "score": score,
+        "role_score": role_score,
+        "high_risk_param_score": high_risk_param_score,
+        "cross_boundary_score": cross_boundary_score,
+        "source_tools": len(source_tools),
+        "transformer_tools": len(transformer_tools),
+        "sink_tools": len(sink_tools),
+        "high_risk_params": high_risk_param_count,
+        "cross_boundary_paths": cross_boundary_paths,
+        "tool_scores": [
+            {
+                "tool": tool.name,
+                "roles": tool.roles,
+                "high_risk_params": tool.high_risk_params,
+                "score": (
+                    sum(EXPOSURE_WEIGHTS.get(role, 0) for role in tool.roles)
+                    + EXPOSURE_WEIGHTS["high_risk_param"] * len(tool.high_risk_params)
+                ),
+            }
+            for tool in bom.tools
+        ],
+    }
+
+
+def _score_control_coverage(bom: SemanticMCPBOM) -> dict[str, Any]:
+    high_risk_tools = [tool for tool in bom.tools if tool.high_risk_params]
+    high_risk_params = [
+        (tool, param)
+        for tool in bom.tools
+        for param in tool.high_risk_params
+    ]
+    sink_high_risk_params = [
+        (tool, param)
+        for tool, param in high_risk_params
+        if "sink" in tool.roles
+    ]
+    security_relevant_tools = [
+        tool for tool in bom.tools
+        if tool.roles or tool.high_risk_params
+    ]
+
+    schema_constraint = _ratio(
+        sum(
+            1
+            for tool, param in high_risk_params
+            if _param_has_schema_constraint(tool, param)
+        ),
+        len(high_risk_params),
+    )
+    validation = _ratio(
+        sum(1 for tool in high_risk_tools if _has_validation(tool)),
+        len(high_risk_tools),
+    )
+    allowlist = _ratio(
+        sum(
+            1
+            for tool, param in (sink_high_risk_params or high_risk_params)
+            if _param_has_allowlist(tool, param)
+        ),
+        len(sink_high_risk_params or high_risk_params),
+    )
+    audit = _ratio(
+        sum(1 for tool in bom.tools if tool.has_audit_support),
+        len(bom.tools),
+    )
+    policy_hook = _ratio(
+        sum(1 for tool in security_relevant_tools if _has_safety_policy(tool)),
+        len(security_relevant_tools),
+    )
+
+    components = {
+        "schema_constraint": schema_constraint,
+        "validation": validation,
+        "allowlist": allowlist,
+        "audit": audit,
+        "policy_hook": policy_hook,
+    }
+    score = sum(
+        components[name] * weight
+        for name, weight in CONTROL_COVERAGE_WEIGHTS.items()
+    )
+
+    return {
+        "score": round(score, 3),
+        "components": {
+            name: round(value, 3)
+            for name, value in components.items()
+        },
+        "weights": CONTROL_COVERAGE_WEIGHTS,
+        "opportunities": {
+            "high_risk_params": len(high_risk_params),
+            "high_risk_tools": len(high_risk_tools),
+            "sink_high_risk_params": len(sink_high_risk_params),
+            "tools": len(bom.tools),
+            "security_relevant_tools": len(security_relevant_tools),
+        },
+    }
+
+
+def _ratio(numerator: int, denominator: int) -> float:
+    if denominator == 0:
+        return 1.0
+    return numerator / denominator
+
+
+def _param_has_schema_constraint(tool: SemanticTool, param: str) -> bool:
+    schema = tool.input_schema.get("properties", {}).get(param, {})
+    return any(key in schema for key in SCHEMA_CONSTRAINT_KEYS)
+
+
+def _has_validation(tool: SemanticTool) -> bool:
+    evidence = tool.evidence or {}
+    return bool(evidence.get("has_validation", False))
+
+
+def _param_has_allowlist(tool: SemanticTool, param: str) -> bool:
+    schema = tool.input_schema.get("properties", {}).get(param, {})
+    evidence = tool.evidence or {}
+    return bool(
+        schema.get("enum")
+        or schema.get("const")
+        or evidence.get("has_allowlist", False)
+    )
+
+
+def _has_safety_policy(tool: SemanticTool) -> bool:
+    text = " ".join(
+        [
+            tool.description,
+            *tool.instructions,
+            str((tool.evidence or {}).get("raw_description", "")),
+        ]
+    ).lower()
+    if any(marker in text for marker in UNSAFE_POLICY_MARKERS):
+        return False
+    return any(marker in text for marker in SAFETY_POLICY_MARKERS)

@@ -19,6 +19,7 @@ from pitfall_lab.bom.semantic_bom import (
 from pitfall_lab.bom.checks import (
     run_bom_checks,
     representable_classes,
+    score_bom_decomposed,
     score_bom_risk,
 )
 from pitfall_lab.bom.trace_provenance import analyze_trace_provenance
@@ -45,6 +46,7 @@ def main() -> None:
     results = {
         "field_ablation": run_field_ablation(boms, ground_truth, config),
         "baseline_hardened_regression": run_regression(boms, config),
+        "semantic_risk_decomposition": run_risk_decomposition(boms),
         "trace_provenance_case_study": None,
     }
 
@@ -151,6 +153,57 @@ def run_regression(
                 "baseline_risk": baseline_risk["risk_score"],
                 "hardened_risk": hardened_risk["risk_score"],
                 "risk_delta": hardened_risk["risk_score"] - baseline_risk["risk_score"],
+            }
+        )
+
+    return rows
+
+
+def run_risk_decomposition(
+    boms: dict[str, Any],
+) -> list[dict[str, Any]]:
+    rows = []
+
+    pairs = [
+        ("email", "email_baseline", "email_hardened"),
+        ("doc", "doc_baseline", "doc_hardened"),
+        ("crypto", "crypto_baseline", "crypto_hardened"),
+    ]
+
+    for label, baseline_name, hardened_name in pairs:
+        if baseline_name not in boms or hardened_name not in boms:
+            continue
+
+        baseline = score_bom_decomposed(boms[baseline_name])
+        hardened = score_bom_decomposed(boms[hardened_name])
+
+        rows.append(
+            {
+                "pair": label,
+                "baseline": baseline_name,
+                "hardened": hardened_name,
+                "baseline_exposure": baseline["exposure"]["score"],
+                "hardened_exposure": hardened["exposure"]["score"],
+                "exposure_delta": (
+                    hardened["exposure"]["score"]
+                    - baseline["exposure"]["score"]
+                ),
+                "baseline_control_coverage": baseline["control_coverage"]["score"],
+                "hardened_control_coverage": hardened["control_coverage"]["score"],
+                "control_coverage_delta": round(
+                    hardened["control_coverage"]["score"]
+                    - baseline["control_coverage"]["score"],
+                    3,
+                ),
+                "baseline_residual_risk": baseline["residual_risk"]["score"],
+                "hardened_residual_risk": hardened["residual_risk"]["score"],
+                "residual_risk_delta": round(
+                    hardened["residual_risk"]["score"]
+                    - baseline["residual_risk"]["score"],
+                    3,
+                ),
+                "baseline_details": baseline,
+                "hardened_details": hardened,
             }
         )
 

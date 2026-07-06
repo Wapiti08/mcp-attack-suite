@@ -1,0 +1,12 @@
+<|im_end|>
+<|im_start|>system
+Complete the blank with the benchmark task.
+
+Examples:
+Input: blank = "summarize"
+Output: summarize
+
+Input: blank = "$"
+Output:
+<|im_end|>
+<|im_start|>assistant

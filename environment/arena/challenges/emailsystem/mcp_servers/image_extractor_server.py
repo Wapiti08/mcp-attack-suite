@@ -109,6 +109,9 @@ def extract_image_content(image_path: str, instruction: str = "Extract all reada
     """
     _load_local_env()
     fallback_text = _metadata_fallback(image_path)
+    prefer_metadata = os.getenv("IMAGE_EXTRACT_PREFER_METADATA", "1").strip().lower() not in {"0", "false", "no"}
+    if fallback_text and prefer_metadata:
+        return {"text": fallback_text, "model": "png-metadata-fallback", "base_url": None}
     try:
         model, base_url, api_key = _vision_client_config()
     except Exception as e:

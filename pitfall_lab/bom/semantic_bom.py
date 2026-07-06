@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -133,6 +134,8 @@ def build_semantic_bom(
                 evidence={
                     "raw_description": raw_description,
                     "function_source_available": bool(function_source),
+                    "has_validation": infer_validation_support(function_source),
+                    "has_allowlist": infer_allowlist_support(function_source),
                 },
             )
         )
@@ -192,16 +195,25 @@ def infer_roles(
     text = f"{name} {description}".lower()
     roles: list[str] = []
 
-    if any(keyword.lower() in text for keyword in config.source_tool_keywords):
+    if any(keyword_matches(text, keyword) for keyword in config.source_tool_keywords):
         roles.append("source")
 
-    if any(keyword.lower() in text for keyword in config.sink_tool_keywords):
+    if any(keyword_matches(text, keyword) for keyword in config.sink_tool_keywords):
         roles.append("sink")
 
     if "image" in text or "ocr" in text:
         roles.append("transformer")
 
     return sorted(set(roles))
+
+
+def keyword_matches(text: str, keyword: str) -> bool:
+    escaped = re.escape(keyword.lower())
+    if re.search(rf"(?<![a-z0-9_]){escaped}(?![a-z0-9_])", text):
+        return True
+
+    # Tool names often encode verbs as snake_case prefixes, e.g. read_emails.
+    return f"{keyword.lower()}_" in text
 
 
 def infer_trust_boundary(roles: list[str]) -> str:
@@ -236,6 +248,36 @@ def infer_audit_support(
 ) -> bool:
     lowered = function_source.lower()
     return any(marker.lower() in lowered for marker in config.audit_markers)
+
+
+def infer_validation_support(function_source: str) -> bool:
+    lowered = function_source.lower()
+    validation_markers = [
+        "raise valueerror",
+        "raise validationerror",
+        "not in allowed",
+        "not_in_allowlist",
+        "re.match",
+        "re.fullmatch",
+        ".match(",
+        ".fullmatch(",
+        "assert ",
+    ]
+    return any(marker in lowered for marker in validation_markers)
+
+
+def infer_allowlist_support(function_source: str) -> bool:
+    lowered = function_source.lower()
+    allowlist_markers = [
+        "allowed_",
+        "allowlist",
+        "allow-list",
+        "approved",
+        "pre-approved",
+        "not in allowed",
+        "not_in_allowlist",
+    ]
+    return any(marker in lowered for marker in allowlist_markers)
 
 
 def extract_function_source(source_text: str, function_name: str) -> str:

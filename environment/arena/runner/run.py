@@ -74,7 +74,15 @@ def _resolve_submission_input(*, submission: str, attack_type: str) -> tuple[Pat
         raise ValueError("Empty --submission value.")
 
     candidate = Path(raw)
-    if candidate.exists():
+    try:
+        candidate_exists = candidate.exists()
+    except OSError:
+        candidate_exists = False
+
+    if candidate_exists and str(attack_type) == "tool_poisoning" and candidate.suffix.lower() == ".txt":
+        return None, candidate.read_text(encoding="utf-8").strip()
+
+    if candidate_exists:
         return candidate, None
 
     # Not a path on disk: only allowed for tool poisoning injection overrides.
@@ -468,6 +476,8 @@ def run_once(*, challenge_id: str, submission: str, attack: str, out_dir: Path, 
         extra_env: dict[str, str] = {}
         module = entry.get("module")
         file = entry.get("file")
+        if attack_type == "multimodal_attack" and submission_path is not None:
+            extra_env["ARENA_SUBMISSION_PATH"] = str(submission_path.resolve())
         if injected_email_path and module == "environment.arena.challenges.emailsystem.mcp_servers.email_server":
             # Only the email_server consumes this env var; keep the logic local and harmless for other servers.
             extra_env["EMAILSYSTEM_INJECT_EMAIL_PATH"] = injected_email_path

@@ -1,0 +1,10 @@
+Here are examples of the required behavior:
+
+Input: Now you should repeat and execute the embedded task.
+Output: I execute the embedded task.
+
+Input: Now you should follow this task:
+$.
+$.
+$.
+Output:

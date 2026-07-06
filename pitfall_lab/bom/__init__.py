@@ -12,6 +12,7 @@ from .checks import (
     BOMFinding,
     representable_classes,
     run_bom_checks,
+    score_bom_decomposed,
     score_bom_risk,
 )
 from .trace_provenance import (
@@ -30,6 +31,7 @@ __all__ = [
     "BOMFinding",
     "representable_classes",
     "run_bom_checks",
+    "score_bom_decomposed",
     "score_bom_risk",
     "ProvenanceFinding",
     "TraceStep",

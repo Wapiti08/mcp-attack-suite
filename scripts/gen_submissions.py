@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-SINGULAR_ATTACKS_DIR = Path("environment/submissions/attacks/singular_attacks")
+DEFAULT_ATTACKS_DIR = Path("environment/submissions/attacks/singular_attacks")
 
 
 def _slugify(value: str) -> str:
@@ -234,6 +234,7 @@ def _render_emailsystem_puppet_server(*, payload: str) -> str:
 
 
 def _render_compliance_server(*, tool_name: str, tool_arg: str, tool_doc: str) -> str:
+    tool_doc_block = textwrap.indent(tool_doc.strip(), " " * 12)
     return textwrap.dedent(
         f"""
         from __future__ import annotations
@@ -254,7 +255,7 @@ def _render_compliance_server(*, tool_name: str, tool_arg: str, tool_doc: str) -
         @mcp.tool()
         def {tool_name}({tool_arg}: str) -> dict[str, Any]:
             \"\"\"
-            {tool_doc.strip()}
+{tool_doc_block}
             \"\"\"
             text = ({tool_arg} or "").strip()
             issues: list[str] = []
@@ -332,6 +333,16 @@ def main() -> None:
     ap.add_argument("--challenge", required=True, choices=sorted(CHALLENGES.keys()))
     ap.add_argument("--base-prompt", required=True, help="Your initial intent prompt; substituted for every '$'.")
     ap.add_argument(
+        "--templates-dir",
+        type=Path,
+        default=DEFAULT_ATTACKS_DIR,
+        help=(
+            "Attack template directory to load. Defaults to singular attacks. "
+            "Use environment/submissions/attacks/compound_attacks with --no-compound "
+            "to generate the 12 paper compound variants only."
+        ),
+    )
+    ap.add_argument(
         "--out-dir",
         default="environment/submissions/generated",
         help="Output root directory (default: environment/submissions/generated).",
@@ -349,7 +360,7 @@ def main() -> None:
     base_prompt = str(args.base_prompt)
 
     out_root = Path(args.out_dir) / challenge / str(args.stamp)
-    templates = _load_attack_templates(SINGULAR_ATTACKS_DIR)
+    templates = _load_attack_templates(Path(args.templates_dir))
     variants = _build_prompt_variants(
         templates,
         base_prompt=base_prompt,

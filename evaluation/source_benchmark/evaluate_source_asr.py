@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
@@ -32,11 +33,14 @@ class AttackResult:
     """Result of a single attack attempt"""
     challenge: str
     attack_type: str
+    attack_config: str
     submission_id: str
     success: bool
     trace: dict[str, Any]
     error: str | None = None
     run_number: int = 1
+    status: str = "completed"
+    status_reason: str | None = None
 
 
 @dataclass
@@ -44,19 +48,41 @@ class ASRReport:
     """Attack Success Rate report for a single attack type"""
     challenge: str
     attack_type: str
+    attack_config: str
     total_attempts: int
     successful_attacks: int
     asr: float
     results: list[AttackResult]
+    num_runs: int = 1
+    raw_run_attempts: int = 0
+    valid_raw_run_attempts: int = 0
+    raw_run_successes: int = 0
+    raw_run_errors: int = 0
+    raw_run_asr: float = 0.0
+    raw_run_completion_rate: float = 0.0
+    valid_submission_attempts: int = 0
+    submission_errors: int = 0
     
     def to_dict(self) -> dict:
         return {
             "challenge": self.challenge,
             "attack_type": self.attack_type,
+            "attack_config": self.attack_config,
+            "num_runs": self.num_runs,
             "total_attempts": self.total_attempts,
             "successful_attacks": self.successful_attacks,
             "asr": self.asr,
             "asr_percentage": f"{self.asr:.1%}",
+            "raw_run_attempts": self.raw_run_attempts,
+            "valid_raw_run_attempts": self.valid_raw_run_attempts,
+            "raw_run_successes": self.raw_run_successes,
+            "raw_run_errors": self.raw_run_errors,
+            "raw_run_asr": self.raw_run_asr,
+            "raw_run_asr_percentage": f"{self.raw_run_asr:.1%}",
+            "raw_run_completion_rate": self.raw_run_completion_rate,
+            "raw_run_completion_percentage": f"{self.raw_run_completion_rate:.1%}",
+            "valid_submission_attempts": self.valid_submission_attempts,
+            "submission_errors": self.submission_errors,
             "results": [asdict(r) for r in self.results]
         }
 
@@ -76,15 +102,19 @@ class SourceBenchmarkEvaluator:
         self,
         challenge: str,
         submissions_dir: Path,
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "gpt-4o-mini",
         num_runs: int = 3,
         run_artifacts_dir: Path | None = None,
+        timeout: int = 300,
+        attack_config_by_type: dict[str, str] | None = None,
     ):
         self.challenge = challenge
         self.submissions_dir = submissions_dir
         self.model = model
         self.num_runs = num_runs
         self.run_artifacts_dir = run_artifacts_dir
+        self.timeout = timeout
+        self.attack_config_by_type = dict(attack_config_by_type or {})
         self.results: list[AttackResult] = []
     
     def run_single_attack(
@@ -104,14 +134,20 @@ class SourceBenchmarkEvaluator:
         Returns:
             AttackResult with success determination
         """
-        output_dir = self._run_output_dir(attack_type=attack_type, submission=submission, run_number=run_number)
+        attack_config = self.attack_config_by_type.get(attack_type, attack_type)
+        output_dir = self._run_output_dir(
+            attack_type=attack_type,
+            attack_config=attack_config,
+            submission=submission,
+            run_number=run_number,
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
 
         submission_arg = self._submission_arg(attack_type, submission)
         cmd = [
-            "python", "-m", "environment.arena.runner", "run",
+            sys.executable, "-m", "environment.arena.runner", "run",
             "--challenge", self.challenge,
-            "--attack", attack_type,
+            "--attack", attack_config,
             "--submission", submission_arg,
             "--model", self.model,
             "--out", str(output_dir),
@@ -122,8 +158,23 @@ class SourceBenchmarkEvaluator:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=self.timeout,
                 check=False
+            )
+            (output_dir / "runner.stdout.log").write_text(result.stdout or "", encoding="utf-8")
+            (output_dir / "runner.stderr.log").write_text(result.stderr or "", encoding="utf-8")
+            (output_dir / "runner_command.json").write_text(
+                json.dumps(
+                    {
+                        "cmd": cmd,
+                        "returncode": result.returncode,
+                        "timeout_seconds": self.timeout,
+                        "attack_type": attack_type,
+                        "attack_config": attack_config,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
             )
                 
             # Strategy 1: Check if runner created a report.json file under --out/<run_id>/.
@@ -146,31 +197,8 @@ class SourceBenchmarkEvaluator:
                         "raw_output": result.stdout,
                         "_parse_error": f"Failed to read report.json from output_dir: {e}"
                     }
-                
-            # Second try: Check environment/runs directory for latest report.json
-            if trace is None or "run_id" not in trace:
-                runs_dir = Path("environment/runs")
-                if runs_dir.exists():
-                    # Find the most recently modified report.json
-                    report_files = sorted(
-                        runs_dir.glob("*/report.json"),
-                        key=lambda p: p.stat().st_mtime,
-                        reverse=True
-                    )
-                    if report_files:
-                        try:
-                            with open(report_files[0], 'r') as f:
-                                trace = json.load(f)
-                                trace["_report_source"] = str(report_files[0])
-                        except Exception as e:
-                            if trace is None:
-                                trace = {
-                                    "raw_output": result.stdout,
-                                    "_parse_error": f"Failed to read report.json from runs dir: {e}",
-                                    "_attempted_file": str(report_files[0])
-                                }
-                
-            # Third try: Parse from stdout/stderr
+
+            # Second try: Parse this runner invocation's stdout/stderr.
             if trace is None or "run_id" not in trace:
                 combined_output = result.stdout + "\n" + result.stderr
                 parsed_trace = self._parse_runner_output(combined_output)
@@ -189,49 +217,106 @@ class SourceBenchmarkEvaluator:
                     # Save samples for debugging
                     if result.stdout:
                         trace["_stdout_sample"] = result.stdout[-1000:]  # Last 1000 chars
+
+            status, status_reason = self._classify_run_status(trace, result.returncode)
                 
             # Determine if attack succeeded
-            success = self._check_attack_success(trace, attack_type)
+            success = self._check_attack_success(trace, attack_type) if status == "completed" else False
                 
             return AttackResult(
                 challenge=self.challenge,
                 attack_type=attack_type,
+                attack_config=attack_config,
                 submission_id=submission.name,
                 success=success,
                 trace=trace,
-                run_number=run_number
+                error=None if status == "completed" else status_reason,
+                run_number=run_number,
+                status=status,
+                status_reason=status_reason,
             )
                 
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as e:
+            trace = self._load_partial_trace(output_dir)
+            trace["_timeout_seconds"] = self.timeout
+            if e.stdout:
+                trace["_stdout_sample"] = str(e.stdout)[-1000:]
+                (output_dir / "runner.stdout.log").write_text(str(e.stdout), encoding="utf-8")
+            if e.stderr:
+                trace["_stderr_sample"] = str(e.stderr)[-1000:]
+                (output_dir / "runner.stderr.log").write_text(str(e.stderr), encoding="utf-8")
             return AttackResult(
                 challenge=self.challenge,
                 attack_type=attack_type,
+                attack_config=attack_config,
                 submission_id=submission.name,
                 success=False,
-                trace={},
-                error="Execution timeout (120s)",
-                run_number=run_number
+                trace=trace,
+                error=f"Execution timeout ({self.timeout}s)",
+                run_number=run_number,
+                status="timeout",
+                status_reason=f"Execution timeout ({self.timeout}s)",
             )
         except Exception as e:
             return AttackResult(
                 challenge=self.challenge,
                 attack_type=attack_type,
+                attack_config=self.attack_config_by_type.get(attack_type, attack_type),
                 submission_id=submission.name,
                 success=False,
                 trace={},
                 error=str(e),
-                run_number=run_number
+                run_number=run_number,
+                status="error",
+                status_reason=str(e),
             )
 
-    def _run_output_dir(self, *, attack_type: str, submission: Path, run_number: int) -> Path:
+    def _run_output_dir(self, *, attack_type: str, attack_config: str, submission: Path, run_number: int) -> Path:
         root = self.run_artifacts_dir or SOURCE_BENCHMARK_RESULTS_DIR / "run_artifacts"
-        safe_id = f"{attack_type}__{submission.stem}__run{run_number}"
+        config_part = f"__{attack_config}" if attack_config != attack_type else ""
+        safe_id = f"{attack_type}{config_part}__{submission.stem}__run{run_number}"
         return root / self.challenge / safe_id
 
     def _submission_arg(self, attack_type: str, submission: Path) -> str:
-        if attack_type == "tool_poisoning" and submission.suffix.lower() == ".txt":
-            return submission.read_text(encoding="utf-8").strip()
         return str(submission)
+
+    def _load_partial_trace(self, output_dir: Path) -> dict[str, Any]:
+        trace_files = sorted(
+            output_dir.glob("*/trace.jsonl"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if not trace_files:
+            return {"_partial_trace": False, "_no_trace_file": str(output_dir)}
+
+        trace_file = trace_files[0]
+        events = []
+        for line in trace_file.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+        return {
+            "_partial_trace": True,
+            "_trace_source": str(trace_file),
+            "_trace_event_count": len(events),
+            "_last_event": events[-1] if events else None,
+            "_event_names": [str(event.get("event", "")) for event in events if isinstance(event, dict)],
+        }
+
+    def _classify_run_status(self, trace: dict[str, Any], returncode: int) -> tuple[str, str | None]:
+        if trace.get("validation") and "run_id" in trace:
+            return "completed", None
+        if trace.get("validation"):
+            return "completed", None
+        if trace.get("error"):
+            return "error", str(trace.get("error"))
+        if returncode != 0:
+            return "error", f"Runner exited with return code {returncode}"
+        if trace.get("_parse_error") or trace.get("_no_report_file"):
+            return "no_report", "Runner did not produce a parseable report.json"
+        return "no_report", "Runner completed without validation/report data"
     
     def _parse_runner_output(self, stdout: str) -> dict:
         """
@@ -255,7 +340,12 @@ class SourceBenchmarkEvaluator:
                 # Check if this line or following lines contain "run_id"
                 # This indicates the start of our report JSON
                 potential_json = '\n'.join(lines[i:])
-                if '"run_id"' in potential_json or '"validation"' in potential_json:
+                if (
+                    '"run_id"' in potential_json
+                    or '"validation"' in potential_json
+                    or '"ok"' in potential_json
+                    or '"error"' in potential_json
+                ):
                     json_start_idx = i
                     break
         
@@ -290,7 +380,7 @@ class SourceBenchmarkEvaluator:
             if line.startswith('{') and line.endswith('}'):
                 try:
                     trace = json.loads(line)
-                    if 'run_id' in trace or 'validation' in trace:
+                    if 'run_id' in trace or 'validation' in trace or 'ok' in trace or 'error' in trace:
                         return trace
                 except json.JSONDecodeError:
                     continue
@@ -490,20 +580,35 @@ class SourceBenchmarkEvaluator:
             return ASRReport(
                 challenge=self.challenge,
                 attack_type=attack_type,
+                attack_config=self.attack_config_by_type.get(attack_type, attack_type),
                 total_attempts=0,
                 successful_attacks=0,
                 asr=0.0,
-                results=[]
+                results=[],
+                num_runs=self.num_runs,
+                raw_run_attempts=0,
+                valid_raw_run_attempts=0,
+                raw_run_successes=0,
+                raw_run_errors=0,
+                raw_run_asr=0.0,
+                raw_run_completion_rate=0.0,
+                valid_submission_attempts=0,
+                submission_errors=0,
             )
         
         print(f"\n{'='*70}")
         print(f"Evaluating {attack_type.upper()}")
         print(f"{'='*70}")
+        print(f"Attack config: {self.attack_config_by_type.get(attack_type, attack_type)}")
         print(f"Found {len(submissions)} submissions")
         print(f"Running {self.num_runs} attempts per submission")
         print()
         
         all_results = []
+        raw_run_attempts = 0
+        valid_raw_run_attempts = 0
+        raw_run_successes = 0
+        raw_run_errors = 0
         
         for i, submission in enumerate(submissions, 1):
             print(f"[{i}/{len(submissions)}] {submission.name}")
@@ -513,43 +618,89 @@ class SourceBenchmarkEvaluator:
             for run in range(self.num_runs):
                 result = self.run_single_attack(attack_type, submission, run + 1)
                 run_results.append(result)
-                
-                status = "✓" if result.success else "✗"
-                if result.error:
-                    print(f"  Run {run + 1}: {status} (error: {result.error})")
+                raw_run_attempts += 1
+                if result.status == "completed":
+                    valid_raw_run_attempts += 1
+                    raw_run_successes += int(result.success)
                 else:
-                    print(f"  Run {run + 1}: {status}")
+                    raw_run_errors += 1
+                
+                if result.status != "completed":
+                    print(f"  Run {run + 1}: ! ({result.status}: {result.status_reason})")
+                elif result.success:
+                    print(f"  Run {run + 1}: ✓")
+                else:
+                    print(f"  Run {run + 1}: ✗")
             
-            # Determine final success by majority vote
-            success_count = sum(1 for r in run_results if r.success)
-            majority_success = success_count > (self.num_runs / 2)
+            # Determine final success by majority vote over completed runs only.
+            completed_results = [r for r in run_results if r.status == "completed"]
+            success_count = sum(1 for r in completed_results if r.success)
+            completed_count = len(completed_results)
+            error_count = len(run_results) - completed_count
+            majority_success = success_count > (completed_count / 2) if completed_count else False
+            submission_status = "completed" if completed_count else "error"
+            if completed_count and error_count:
+                submission_status = "partial"
             
             # Store result with majority decision
             final_result = run_results[-1]
             final_result.success = majority_success
+            final_result.status = submission_status
+            final_result.status_reason = None if completed_count else "No completed runs for this submission"
+            final_result.error = final_result.status_reason
+            if isinstance(final_result.trace, dict):
+                final_result.trace["_run_success_count"] = success_count
+                final_result.trace["_run_completed_count"] = completed_count
+                final_result.trace["_run_error_count"] = error_count
+                final_result.trace["_run_attempt_count"] = len(run_results)
+                final_result.trace["_majority_success"] = majority_success
             all_results.append(final_result)
             
-            print(f"  → Final: {'SUCCESS' if majority_success else 'FAILED'} "
-                  f"({success_count}/{self.num_runs} runs succeeded)")
+            if not completed_count:
+                print(f"  → Final: ERROR (0/{self.num_runs} runs completed)")
+            else:
+                suffix = f", {error_count} errored" if error_count else ""
+                print(f"  → Final: {'SUCCESS' if majority_success else 'FAILED'} "
+                      f"({success_count}/{completed_count} completed runs succeeded{suffix})")
         
         # Calculate ASR
-        successful = sum(1 for r in all_results if r.success)
-        asr = successful / len(all_results) if all_results else 0.0
+        valid_submission_attempts = sum(1 for r in all_results if r.status in {"completed", "partial"})
+        submission_errors = len(all_results) - valid_submission_attempts
+        successful = sum(1 for r in all_results if r.status in {"completed", "partial"} and r.success)
+        asr = successful / valid_submission_attempts if valid_submission_attempts else 0.0
+        raw_run_asr = raw_run_successes / valid_raw_run_attempts if valid_raw_run_attempts else 0.0
+        raw_run_completion_rate = valid_raw_run_attempts / raw_run_attempts if raw_run_attempts else 0.0
         
         print(f"\n{'='*70}")
         print(f"Results for {attack_type}:")
-        print(f"  Total Attempts: {len(all_results)}")
-        print(f"  Successful: {successful}")
-        print(f"  ASR: {asr:.1%}")
+        print(f"  Submissions: {len(all_results)}")
+        print(f"  Valid Submissions: {valid_submission_attempts}")
+        print(f"  Submission Errors: {submission_errors}")
+        print(f"  Majority Successful: {successful}")
+        print(f"  Submission ASR: {asr:.1%}")
+        print(f"  Raw Runs Completed: {valid_raw_run_attempts}/{raw_run_attempts}")
+        print(f"  Raw Run Errors: {raw_run_errors}")
+        print(f"  Raw Runs Successful: {raw_run_successes}/{valid_raw_run_attempts}")
+        print(f"  Raw Run ASR: {raw_run_asr:.1%}")
         print(f"{'='*70}\n")
         
         return ASRReport(
             challenge=self.challenge,
             attack_type=attack_type,
+            attack_config=self.attack_config_by_type.get(attack_type, attack_type),
             total_attempts=len(all_results),
             successful_attacks=successful,
             asr=asr,
-            results=all_results
+            results=all_results,
+            num_runs=self.num_runs,
+            raw_run_attempts=raw_run_attempts,
+            valid_raw_run_attempts=valid_raw_run_attempts,
+            raw_run_successes=raw_run_successes,
+            raw_run_errors=raw_run_errors,
+            raw_run_asr=raw_run_asr,
+            raw_run_completion_rate=raw_run_completion_rate,
+            valid_submission_attempts=valid_submission_attempts,
+            submission_errors=submission_errors,
         )
     
     def _load_submissions(self, attack_type: str) -> list[Path]:
@@ -595,18 +746,37 @@ class SourceBenchmarkEvaluator:
         return reports
 
 
-def generate_summary_report(reports: dict[str, ASRReport]) -> dict:
+def generate_summary_report(reports: dict[str, ASRReport], metadata: dict[str, Any] | None = None) -> dict:
     """Generate summary report across all attack types"""
     total_attempts = sum(r.total_attempts for r in reports.values())
+    valid_submission_attempts = sum(r.valid_submission_attempts for r in reports.values())
+    submission_errors = sum(r.submission_errors for r in reports.values())
     total_successful = sum(r.successful_attacks for r in reports.values())
-    overall_asr = total_successful / total_attempts if total_attempts > 0 else 0.0
+    overall_asr = total_successful / valid_submission_attempts if valid_submission_attempts > 0 else 0.0
+    raw_run_attempts = sum(r.raw_run_attempts for r in reports.values())
+    valid_raw_run_attempts = sum(r.valid_raw_run_attempts for r in reports.values())
+    raw_run_successes = sum(r.raw_run_successes for r in reports.values())
+    raw_run_errors = sum(r.raw_run_errors for r in reports.values())
+    raw_run_asr = raw_run_successes / valid_raw_run_attempts if valid_raw_run_attempts > 0 else 0.0
+    raw_run_completion_rate = valid_raw_run_attempts / raw_run_attempts if raw_run_attempts > 0 else 0.0
     
     return {
         "timestamp": datetime.now().isoformat(),
+        "metadata": metadata or {},
         "overall_asr": overall_asr,
         "overall_asr_percentage": f"{overall_asr:.1%}",
         "total_attempts": total_attempts,
+        "valid_submission_attempts": valid_submission_attempts,
+        "submission_errors": submission_errors,
         "total_successful": total_successful,
+        "raw_run_attempts": raw_run_attempts,
+        "valid_raw_run_attempts": valid_raw_run_attempts,
+        "raw_run_successes": raw_run_successes,
+        "raw_run_errors": raw_run_errors,
+        "raw_run_asr": raw_run_asr,
+        "raw_run_asr_percentage": f"{raw_run_asr:.1%}",
+        "raw_run_completion_rate": raw_run_completion_rate,
+        "raw_run_completion_percentage": f"{raw_run_completion_rate:.1%}",
         "by_attack_type": {
             attack_type: report.to_dict()
             for attack_type, report in reports.items()
@@ -631,6 +801,14 @@ Examples:
     --submissions-dir submissions/emailsystem/20260215_120000 \\
     --attack-types tool_poisoning multimodal_attack \\
     --num-runs 5
+
+  # Evaluate the same submissions against hardened attack configs/specs
+  python -m evaluation.source_benchmark.evaluate_source_asr \\
+    --challenge ETHPriceServer \\
+    --submissions-dir environment/submissions/generated/ETHPriceServer/latest \\
+    --attack-types tool_poisoning \\
+    --attack-configs tool_poisoning_hardened \\
+    --model gpt-4.1-mini
         """
     )
     
@@ -653,10 +831,20 @@ Examples:
         default=["tool_poisoning", "multimodal_attack", "puppet"],
         help="Attack types to evaluate (default: all three)"
     )
+
+    parser.add_argument(
+        "--attack-configs",
+        nargs="+",
+        help=(
+            "Optional attack config names to pass to the arena runner, aligned with --attack-types. "
+            "Use this to run the same attack-family submissions against variant configs such as "
+            "tool_poisoning_hardened while still aggregating under tool_poisoning."
+        ),
+    )
     
     parser.add_argument(
         "--model",
-        default="claude-sonnet-4-20250514",
+        default="gpt-4o-mini",
         help="Model to use for evaluation"
     )
     
@@ -678,6 +866,13 @@ Examples:
         type=Path,
         help="Directory for preserving runner trace/report artifacts (default: <output_stem>_runs)"
     )
+
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=300,
+        help="Seconds to allow each runner invocation before marking it as timeout (default: 300)"
+    )
     
     args = parser.parse_args()
     
@@ -685,6 +880,16 @@ Examples:
     if not args.submissions_dir.exists():
         print(f"Error: Submissions directory not found: {args.submissions_dir}")
         return 1
+
+    attack_config_by_type = dict(zip(args.attack_types, args.attack_types, strict=True))
+    if args.attack_configs:
+        if len(args.attack_configs) != len(args.attack_types):
+            print(
+                "Error: --attack-configs must have the same number of values as --attack-types "
+                f"({len(args.attack_configs)} != {len(args.attack_types)})"
+            )
+            return 1
+        attack_config_by_type = dict(zip(args.attack_types, args.attack_configs, strict=True))
     
     if args.output:
         output_path = args.output
@@ -705,6 +910,8 @@ Examples:
         model=args.model,
         num_runs=args.num_runs,
         run_artifacts_dir=run_artifacts_dir,
+        timeout=args.timeout,
+        attack_config_by_type=attack_config_by_type,
     )
     
     # Run evaluation
@@ -715,21 +922,43 @@ Examples:
     print(f"Submissions: {args.submissions_dir}")
     print(f"Model: {args.model}")
     print(f"Runs per submission: {args.num_runs}")
+    print(f"Timeout per run: {args.timeout}s")
+    print(f"Attack configs: {attack_config_by_type}")
     print(f"Run artifacts: {run_artifacts_dir}")
     print(f"{'='*70}\n")
     
     reports = evaluator.evaluate_all(args.attack_types)
     
     # Generate summary
-    summary = generate_summary_report(reports)
+    summary = generate_summary_report(
+        reports,
+        metadata={
+            "challenge": args.challenge,
+            "submissions_dir": str(args.submissions_dir),
+            "model": args.model,
+            "model_id": args.model,
+            "num_runs": args.num_runs,
+            "timeout_seconds": args.timeout,
+            "attack_types": args.attack_types,
+            "attack_configs": attack_config_by_type,
+            "run_artifacts_dir": str(run_artifacts_dir),
+        },
+    )
     
     # Print summary
     print(f"\n{'='*70}")
     print(f"OVERALL SUMMARY")
     print(f"{'='*70}")
-    print(f"Total Attempts: {summary['total_attempts']}")
-    print(f"Total Successful: {summary['total_successful']}")
-    print(f"Overall ASR: {summary['overall_asr_percentage']}")
+    print(f"Submissions: {summary['total_attempts']}")
+    print(f"Valid Submissions: {summary['valid_submission_attempts']}")
+    print(f"Submission Errors: {summary['submission_errors']}")
+    print(f"Majority Successful: {summary['total_successful']}")
+    print(f"Submission ASR: {summary['overall_asr_percentage']}")
+    print(f"Raw Runs Completed: {summary['valid_raw_run_attempts']}/{summary['raw_run_attempts']}")
+    print(f"Raw Run Errors: {summary['raw_run_errors']}")
+    print(f"Raw Runs Successful: {summary['raw_run_successes']}/{summary['valid_raw_run_attempts']}")
+    print(f"Raw Run ASR: {summary['raw_run_asr_percentage']}")
+    print(f"Raw Run Completion: {summary['raw_run_completion_percentage']}")
     print(f"{'='*70}\n")
     
     # Save results

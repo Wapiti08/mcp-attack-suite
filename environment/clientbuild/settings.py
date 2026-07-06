@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import json
 import warnings
+from urllib.parse import urlparse
 
 
 @dataclass(frozen=True)
@@ -145,7 +146,11 @@ def load_settings_with_mcp(mcp_urls: list[str], mcp_names: list[str] | None) -> 
             stacklevel=2,
         )
     if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY. Put it in `.env` and re-run (local can use a placeholder).")
+        parsed = urlparse(str(base_url or ""))
+        if parsed.hostname in {"127.0.0.1", "localhost", "0.0.0.0"}:
+            api_key = "local"
+        else:
+            raise RuntimeError("Missing OPENAI_API_KEY. Put it in `.env` and re-run (local can use a placeholder).")
 
     return Settings(
         model=str(model),
